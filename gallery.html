@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PINK CITY</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --hot: #ff006e;
+    --neon: #ff4db8;
+    --magenta: #ff00aa;
+    --deep: #cc0055;
+    --black: #000000;
+    --bg: #060606;
+    --card-bg: #0d0d0d;
+    --border: #1a1a1a;
+    --white: #ffffff;
+    --grey: #555;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  ::selection { background: var(--hot); color: #000; }
+
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* ── SCANLINE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255,0,110,0.015) 2px,
+      rgba(255,0,110,0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── NOISE TEXTURE ── */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9998;
+    opacity: 0.4;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    padding: 60px 40px 40px;
+    border-bottom: 1px solid #1a1a1a;
+    overflow: hidden;
+  }
+
+  .header-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(255,0,110,0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 90% 50%, rgba(255,0,170,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .logo-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(72px, 12vw, 140px);
+    line-height: 0.9;
+    letter-spacing: 4px;
+    color: var(--white);
+    position: relative;
+    display: block;
+    text-shadow:
+      0 0 40px rgba(255,0,110,0.8),
+      0 0 80px rgba(255,0,110,0.4),
+      0 0 120px rgba(255,0,110,0.2);
+  }
+
+  .logo .pink {
+    color: var(--hot);
+    text-shadow:
+      0 0 20px var(--hot),
+      0 0 60px var(--hot),
+      0 0 100px rgba(255,0,110,0.5),
+      2px 2px 0 var(--deep),
+      -1px -1px 0 rgba(255,77,184,0.5);
+  }
+
+  /* glitch */
+  .logo::before,
+  .logo::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; left: 0;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: inherit;
+    letter-spacing: inherit;
+    line-height: inherit;
+  }
+  .logo::before {
+    color: rgba(255,0,110,0.5);
+    animation: glitch-a 4s infinite;
+    clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  }
+  .logo::after {
+    color: rgba(255,255,255,0.15);
+    animation: glitch-b 4s infinite;
+    clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  }
+
+  @keyframes glitch-a {
+    0%, 90%, 100% { transform: none; opacity: 0; }
+    92% { transform: translate(-3px, 1px); opacity: 1; }
+    94% { transform: translate(3px, -1px); opacity: 1; }
+    96% { transform: none; opacity: 0; }
+  }
+  @keyframes glitch-b {
+    0%, 88%, 100% { transform: none; opacity: 0; }
+    90% { transform: translate(4px, 2px); opacity: 1; }
+    93% { transform: translate(-2px, -2px); opacity: 1; }
+    95% { transform: none; opacity: 0; }
+  }
+
+  .tagline {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--grey);
+    text-transform: uppercase;
+    margin-top: 10px;
+  }
+
+  .tagline span {
+    color: var(--neon);
+    animation: blink 1.5s step-end infinite;
+  }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── STATS BAR ── */
+  .stats-bar {
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    padding: 14px 40px;
+    background: #0a0a0a;
+    border-bottom: 1px solid #1a1a1a;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: var(--grey);
+    overflow-x: auto;
+  }
+
+  .stat { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+  .stat-num { color: var(--hot); font-size: 16px; font-weight: bold; }
+
+  /* ── CONTROLS ── */
+  .controls {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(6,6,6,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid #1a1a1a;
+    padding: 16px 40px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .search-wrap::before {
+    content: '>';
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--hot);
+    font-size: 14px;
+  }
+
+  .search {
+    width: 100%;
+    background: #0d0d0d;
+    border: 1px solid #222;
+    color: var(--white);
+    padding: 10px 14px 10px 32px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 1px;
+    border-radius: 0;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search:focus { border-color: var(--hot); box-shadow: 0 0 0 1px var(--hot); }
+  .search::placeholder { color: #333; }
+
+  .filter-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .filter-btn {
+    padding: 8px 18px;
+    background: transparent;
+    border: 1px solid #222;
+    color: #555;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.15s;
+    border-radius: 0;
+  }
+
+  .filter-btn:hover { border-color: var(--neon); color: var(--neon); }
+  .filter-btn.active {
+    background: var(--hot);
+    border-color: var(--hot);
+    color: #000;
+    font-weight: bold;
+    box-shadow: 0 0 16px rgba(255,0,110,0.5);
+  }
+
+  .count-tag {
+    margin-left: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #888;
+  }
+
+  .count-tag.active { color: rgba(0,0,0,0.6); }
+
+  /* ── GRID ── */
+  .grid-wrap { padding: 32px 40px 80px; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 2px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    position: relative;
+    background: var(--card-bg);
+    overflow: hidden;
+    cursor: pointer;
+    group: true;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(255,0,110,0.06) 100%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  .card-img-wrap {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    background: #111;
+  }
+
+  .card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94), filter 0.3s;
+    filter: saturate(0.9);
+  }
+
+  .card:hover img {
+    transform: scale(1.08);
+    filter: saturate(1.3) brightness(1.05);
+  }
+
+  .card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    display: flex;
+    align-items: flex-end;
+    padding: 16px;
+    z-index: 2;
+  }
+
+  .card:hover .card-overlay { opacity: 1; }
+
+  .card-overlay-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--hot);
+    color: #000;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 8px 14px;
+    font-weight: bold;
+    box-shadow: 0 0 20px rgba(255,0,110,0.6);
+  }
+
+  .card-body {
+    padding: 10px 12px 12px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .card-source {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--hot);
+    margin-bottom: 4px;
+  }
+
+  .card-name {
+    font-size: 11px;
+    line-height: 1.4;
+    color: #aaa;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Holographic shimmer on card border */
+  .card {
+    border: 1px solid transparent;
+    transition: border-color 0.3s;
+  }
+  .card:hover {
+    border-color: var(--hot);
+    box-shadow: 0 0 30px rgba(255,0,110,0.15), inset 0 0 30px rgba(255,0,110,0.03);
+  }
+
+  /* ── NO IMAGE ── */
+  .no-img {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    background: #111;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty {
+    text-align: center;
+    padding: 80px 40px;
+    color: #333;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+  }
+
+  .empty .icon { font-size: 40px; margin-bottom: 16px; opacity: 0.3; }
+
+  /* ── LOADING ── */
+  #loading {
+    text-align: center;
+    padding: 100px 40px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 4px;
+    color: var(--hot);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── CONFIG PANEL ── */
+  #config-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+  }
+
+  .config-box {
+    width: 100%;
+    max-width: 480px;
+    padding: 50px 40px;
+    border: 1px solid #ff006e;
+    position: relative;
+    box-shadow: 0 0 60px rgba(255,0,110,0.2), inset 0 0 60px rgba(255,0,110,0.03);
+  }
+
+  .config-box::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 20px; right: 20px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--hot), transparent);
+  }
+
+  .config-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px;
+    color: var(--white);
+    letter-spacing: 4px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 30px rgba(255,0,110,0.6);
+  }
+
+  .config-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: #444;
+    text-transform: uppercase;
+    margin-bottom: 32px;
+  }
+
+  .config-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--hot);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+    margin-top: 20px;
+  }
+
+  .config-input {
+    width: 100%;
+    background: #0d0d0d;
+    border: 1px solid #222;
+    color: var(--white);
+    padding: 12px 14px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 1px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .config-input:focus { border-color: var(--hot); }
+
+  .config-btn {
+    width: 100%;
+    margin-top: 28px;
+    padding: 16px;
+    background: var(--hot);
+    color: #000;
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 6px;
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+    box-shadow: 0 0 30px rgba(255,0,110,0.4);
+  }
+
+  .config-btn:hover { box-shadow: 0 0 50px rgba(255,0,110,0.7); }
+
+  /* ── CARD ENTER ANIMATION ── */
+  .card {
+    animation: card-in 0.4s ease backwards;
+  }
+
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ── PINK GLOW CURSOR ── */
+  .cursor-glow {
+    position: fixed;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,0,110,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: transform 0.05s;
+    z-index: 9997;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    header { padding: 40px 20px 30px; }
+    .controls { padding: 12px 20px; }
+    .grid-wrap { padding: 20px 20px 60px; }
+    .stats-bar { padding: 12px 20px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+
+<!-- cursor glow -->
+<div class="cursor-glow" id="cursor-glow"></div>
+
+<!-- CONFIG OVERLAY -->
+<div id="config-overlay">
+  <div class="config-box">
+    <div class="config-title">PINK CITY</div>
+    <div class="config-sub">// connect to database</div>
+    <label class="config-label">Supabase URL</label>
+    <input class="config-input" id="cfg-url" type="text" placeholder="https://xxxxxxxxxx.supabase.co">
+    <label class="config-label">Anon Key</label>
+    <input class="config-input" id="cfg-key" type="password" placeholder="eyJ...">
+    <button class="config-btn" onclick="connect()">ENTER PINK CITY</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<header>
+  <div class="header-bg"></div>
+  <div class="logo-wrap">
+    <span class="logo" data-text="PINK CITY"><span class="pink">PINK</span> CITY</span>
+    <div class="tagline">世界中のPINKを集めた場所<span> ▮</span></div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat"><span class="stat-num" id="total-count">—</span><span>ITEMS</span></div>
+  <div class="stat"><span class="stat-num" id="showing-count">—</span><span>SHOWING</span></div>
+  <div class="stat" style="margin-left:auto; color:#222;">PINK CITY // COLLECTION</div>
+</div>
+
+<div class="controls">
+  <div class="search-wrap">
+    <input class="search" id="search" type="text" placeholder="SEARCH PINK...">
+  </div>
+  <div class="filter-group" id="filter-group">
+    <button class="filter-btn active" data-source="all" onclick="setFilter('all', this)">ALL <span class="count-tag active" id="count-all"></span></button>
+    <button class="filter-btn" data-source="amazon" onclick="setFilter('amazon', this)">AMAZON <span class="count-tag" id="count-amazon"></span></button>
+    <button class="filter-btn" data-source="aliexpress" onclick="setFilter('aliexpress', this)">ALIEXPRESS <span class="count-tag" id="count-aliexpress"></span></button>
+  </div>
+</div>
+
+<div class="grid-wrap">
+  <div id="loading">LOADING PINK CITY...</div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+let SB_URL = '', SB_KEY = '';
+let allProducts = [];
+let currentFilter = 'all';
+
+// cursor glow
+document.addEventListener('mousemove', e => {
+  const g = document.getElementById('cursor-glow');
+  g.style.left = e.clientX + 'px';
+  g.style.top = e.clientY + 'px';
+});
+
+// restore saved credentials
+window.addEventListener('DOMContentLoaded', () => {
+  const url = localStorage.getItem('sb-url');
+  const key = localStorage.getItem('sb-key');
+  if (url) document.getElementById('cfg-url').value = url;
+  if (key) document.getElementById('cfg-key').value = key;
+  if (url && key) { SB_URL = url; SB_KEY = key; autoConnect(); }
+});
+
+async function autoConnect() {
+  document.getElementById('config-overlay').style.display = 'none';
+  await loadProducts();
+}
+
+async function connect() {
+  SB_URL = document.getElementById('cfg-url').value.trim();
+  SB_KEY = document.getElementById('cfg-key').value.trim();
+  if (!SB_URL || !SB_KEY) { alert('URLとKeyを入力してください'); return; }
+  localStorage.setItem('sb-url', SB_URL);
+  localStorage.setItem('sb-key', SB_KEY);
+  document.getElementById('config-overlay').style.display = 'none';
+  await loadProducts();
+}
+
+async function loadProducts() {
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('grid').innerHTML = '';
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+
+  try {
+    const res = await fetch(
+      SB_URL + '/rest/v1/pink_products?status=eq.approved&order=created_at.desc&limit=1000&select=id,product_name,image_url,product_url,source',
+      {
+        signal: controller.signal,
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+      }
+    );
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('API error: ' + res.status);
+    allProducts = await res.json();
+
+    document.getElementById('loading').style.display = 'none';
+    updateCounts();
+    renderGrid(allProducts);
+
+    // search
+    document.getElementById('search').addEventListener('input', e => {
+      renderFiltered();
+    });
+  } catch(e) {
+    clearTimeout(timer);
+    document.getElementById('loading').innerHTML = 'CONNECTION ERROR — <a href="#" style="color:var(--hot)" onclick="location.reload()">RETRY</a>';
+  }
+}
+
+function updateCounts() {
+  document.getElementById('total-count').textContent = allProducts.length;
+
+  const sources = ['amazon', 'aliexpress'];
+  document.getElementById('count-all').textContent = allProducts.length;
+  sources.forEach(s => {
+    const n = allProducts.filter(p => p.source === s).length;
+    const el = document.getElementById('count-' + s);
+    if (el) el.textContent = n;
+  });
+}
+
+function setFilter(source, btn) {
+  currentFilter = source;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('active');
+    b.querySelector('.count-tag')?.classList.remove('active');
+  });
+  btn.classList.add('active');
+  btn.querySelector('.count-tag')?.classList.add('active');
+  renderFiltered();
+}
+
+function renderFiltered() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  let products = allProducts;
+  if (currentFilter !== 'all') products = products.filter(p => p.source === currentFilter);
+  if (q) products = products.filter(p => p.product_name.toLowerCase().includes(q));
+  renderGrid(products);
+}
+
+function renderGrid(products) {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  document.getElementById('showing-count').textContent = products.length;
+
+  if (!products.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="icon">💗</div>NO PINK FOUND</div>';
+    return;
+  }
+
+  products.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.animationDelay = Math.min(i * 0.03, 1) + 's';
+    card.onclick = () => window.open(p.product_url, '_blank');
+
+    const noImgSvg = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect fill='%23111' width='100' height='100'/><text x='50' y='58' font-size='36' text-anchor='middle' fill='%23ff006e'>💗</text></svg>`;
+
+    card.innerHTML = `
+      <div class="card-img-wrap">
+        <img src="${p.image_url || ''}" alt="${esc(p.product_name)}" loading="lazy" onerror="this.src='${noImgSvg}'">
+        <div class="card-overlay">
+          <div class="card-overlay-btn">💗 BUY NOW</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="card-source">${(p.source || '').toUpperCase()}</div>
+        <div class="card-name">${esc(p.product_name)}</div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
