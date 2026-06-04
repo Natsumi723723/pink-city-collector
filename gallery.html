@@ -701,11 +701,22 @@ function renderGrid(products) {
     card.style.animationDelay = Math.min(i * 0.03, 1) + 's';
     card.onclick = () => window.open(p.product_url, '_blank');
 
-    const noImgSvg = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect fill='%23111' width='100' height='100'/><text x='50' y='58' font-size='36' text-anchor='middle' fill='%23ff006e'>💗</text></svg>`;
+    const hasImg = p.image_url && p.image_url.length > 10;
+
+    const imgHtml = hasImg
+      ? `<img src="${p.image_url}" alt="${esc(p.product_name)}" loading="lazy"
+           onerror="this.style.display='none';this.parentNode.querySelector('.no-img-placeholder').style.display='flex'">`
+      : '';
+
+    const placeholderStyle = hasImg ? 'display:none' : 'display:flex';
 
     card.innerHTML = `
       <div class="card-img-wrap">
-        <img src="${p.image_url || ''}" alt="${esc(p.product_name)}" loading="lazy" onerror="this.src='${noImgSvg}'">
+        ${imgHtml}
+        <div class="no-img-placeholder" style="${placeholderStyle};position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#0d0d0d,#1a0a12);gap:8px;">
+          <span style="font-size:32px;opacity:0.6">💗</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:#333;text-transform:uppercase;text-align:center;padding:0 12px;line-height:1.5">${esc(p.product_name.substring(0,40))}...</span>
+        </div>
         <div class="card-overlay">
           <div class="card-overlay-btn">💗 BUY NOW</div>
         </div>
