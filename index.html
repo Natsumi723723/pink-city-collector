@@ -239,6 +239,15 @@ body::before {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  margin-bottom: 5px;
+}
+.card-price {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  font-weight: bold;
+  color: #ff006e;
+  text-shadow: 0 0 6px rgba(255,0,110,0.4);
+  letter-spacing: 0.5px;
 }
 
 /* ── LOADING ── */
@@ -374,7 +383,7 @@ async function fetchAll() {
   const PAGE = 500;
   while (true) {
     const res = await fetch(
-      `${SB_URL}/rest/v1/pink_products?status=eq.approved&order=created_at.desc&select=id,product_name,image_url,product_url,source&limit=${PAGE}&offset=${from}`,
+      `${SB_URL}/rest/v1/pink_products?status=eq.approved&order=created_at.desc&select=id,product_name,image_url,product_url,source,price&limit=${PAGE}&offset=${from}`,
       { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }
     );
     const data = await res.json();
@@ -420,6 +429,7 @@ function makeCard(p) {
     <div class="card-body">
       <div class="card-source">${escHtml(p.source || '')}</div>
       <div class="card-name">${escHtml(p.product_name || '')}</div>
+      ${p.price ? `<div class="card-price">${escHtml(p.price)}</div>` : ''}
     </div>
   `;
   return card;

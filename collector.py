@@ -52,6 +52,30 @@ PINK_KEYWORDS_JP = [
 PINK_KEYWORDS_CN = [
     "荧光粉", "亮粉色", "玫红色", "粉色亮片", "粉色水钻",
     "粉色闪片", "玫瑰粉", "亮片粉色", "粉色镭射", "粉色珠光",
+    "粉色全息", "极光粉", "粉色闪光", "桃红色",
+]
+
+# AliExpress専用：商品カテゴリ×ピンクの組み合わせ
+PINK_KEYWORDS_ALI = [
+    # ファッション
+    "pink y2k top", "hot pink crop top", "neon pink dress",
+    "pink sequin dress", "pink glitter outfit", "pink rhinestone top",
+    "pink holographic jacket", "fuchsia bodycon", "magenta mini dress",
+    "pink rave outfit", "neon pink bikini", "pink metallic skirt",
+    # アクセサリー
+    "pink rhinestone necklace", "hot pink earrings", "neon pink ring",
+    "pink crystal bracelet", "pink bling accessories", "pink glitter bag",
+    "pink holographic bag", "pink sequin purse", "fuchsia handbag",
+    # ネイル
+    "pink nail charms", "neon pink nail art", "pink glitter nails",
+    "hot pink press on nails", "pink rhinestone nails", "pink chrome nails",
+    # インテリア・雑貨
+    "pink neon sign", "hot pink led light", "pink glitter phone case",
+    "neon pink wall decor", "pink holographic sticker", "pink bling phone case",
+    "pink mirror decoration", "fuchsia room decor",
+    # コスメ
+    "hot pink lipstick", "neon pink lip gloss", "pink glitter eyeshadow",
+    "pink shimmer highlighter", "fuchsia blush", "pink holographic makeup",
 ]
 
 HEADERS = {
@@ -67,29 +91,96 @@ def get_supabase():
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+# ギラギラ系ワード（これが商品名に1つでも入ってないとスキップ）
+GLITTER_WORDS = [
+    # 日本語
+    "グリッター", "スパンコール", "スパングル", "ラメ", "ラインストーン",
+    "ストーン", "クリスタル", "ビジュー", "ホログラム", "ホログラフィック",
+    "オーロラ", "メタリック", "シャイン", "シマー", "キラキラ", "ビーズ",
+    "パール", "スタッズ", "エナメル", "ミラー", "ネオン",
+    # 英語
+    "glitter", "sequin", "rhinestone", "crystal", "hologram", "holographic",
+    "aurora", "iridescent", "metallic", "shimmer", "shine", "bling",
+    "sparkle", "studs", "patent", "mirror", "neon", "chrome",
+    "lame", "bijou", "beads", "pearl",
+]
+
 EXCLUDE_KEYWORDS = [
+    # お花・植物系
     "フクシア", "fuchsia", "Fuchsia", "植物", "苗", "花", "園芸", "gardening",
     "garden", "planting", "flower", "floral", "bouquet", "botanical",
+    # CD・音楽系のみ（ノート・手帳はOK）
+    "remastered", "Remastered", "bonus track", "music album", "soundtrack",
+    # コスメ全般（クリップ・グリップ・リップストップは除外しない）
+    "リップグロス", "リップティント", "リップクリーム", "リップカラー", "リップモンスター",
+    "リップライナー", "リップシャイン", "リップエッセンス", "リップペンシル", "リップセラム",
+    "口紅", "ルージュ", "チーク", "アイシャドウ", "ファンデーション", "コンシーラー",
+    "マスカラ", "アイライナー", "ハイライター", "ブラッシュ", "ブロンザー",
+    "ネイルポリッシュ", "マニキュア", "ジェルネイル", "カラージェル",
+    "リップグロス", "ティント", "ルージュ", "リップクリーム",
+    "下地", "化粧水", "美容液", "乳液", "クリーム", "洗顔", "日焼け止め",
+    "lipstick", "lip gloss", "lip tint", "eyeshadow", "mascara", "blush",
+    "foundation", "concealer", "highlighter", "bronzer", "eyeliner",
+    "nail polish", "nail gel", "color gel", "base coat", "top coat",
+    "skincare", "serum", "moisturizer", "sunscreen", "toner",
+    "hair color", "hair dye", "ヘアカラー", "白髪染め", "カラーシャンプー",
+    "染料", "色素",
 ]
+
+# CDジャケット・レコード系パターン
+EXCLUDE_PATTERNS = [
+    r'\[analog\]', r'\(analog\)', r'limited edition.*lp', r'vinyl lp',
+    r'vinyl record', r'bonus track', r'remastered edition',
+    r'\bep\b', r'\blp\b',
+]
+
+import re
+_compiled_patterns = [re.compile(p, re.IGNORECASE) for p in EXCLUDE_PATTERNS]
 
 def is_excluded(product_name):
     name_lower = product_name.lower()
-    return any(kw.lower() in name_lower for kw in EXCLUDE_KEYWORDS)
+    # キーワード除外
+    if any(kw.lower() in name_lower for kw in EXCLUDE_KEYWORDS):
+        return True
+    # パターン除外
+    if any(p.search(product_name) for p in _compiled_patterns):
+        return True
+    return False
 
 
-def save_product(sb, product_name, image_url, product_url, source, keyword):
+def save_product(sb, product_name, image_url, product_url, source, keyword, require_image=False, price=None):
     if is_excluded(product_name):
-        print(f"  — スキップ(お花系): {product_name[:40]}")
+        print(f"  — スキップ: {product_name[:40]}")
+        return False
+    name_lower = product_name.lower()
+    # ギラギラ系ワードが1つも含まれていなければスキップ
+    if not any(w.lower() in name_lower for w in GLITTER_WORDS):
+        return False
+    # ピンクワードが1つも含まれていなければスキップ（カラバリ全出し防止）
+    PINK_WORDS = [
+        "ピンク", "pink", "ホットピンク", "hot pink", "ネオンピンク", "neon pink",
+        "ローズ", "rose", "マゼンタ", "magenta", "フューシャ", "fuchsia",
+        "桃", "蛍光ピンク", "ショッキングピンク", "バービーピンク", "barbie pink",
+        "オーロラピンク", "aurora pink",
+    ]
+    if not any(w.lower() in name_lower for w in PINK_WORDS):
+        return False
+    # AliExpressは画像なしをスキップ
+    if require_image and (not image_url or len(image_url) < 10):
+        print(f"  — スキップ(画像なし): {product_name[:40]}")
         return False
     try:
-        sb.table("pink_products").upsert({
+        row = {
             "product_name": product_name,
             "image_url": image_url,
             "product_url": product_url,
             "source": source,
             "status": "pending",
             "pink_keywords": keyword,
-        }, on_conflict="product_url").execute()
+        }
+        if price:
+            row["price"] = price
+        sb.table("pink_products").upsert(row, on_conflict="product_url").execute()
         print(f"  ✓ {source}: {product_name[:40]}")
         return True
     except Exception as e:
@@ -138,7 +229,8 @@ def collect_etsy(sb):
 # ── AliExpress（スクレイピング） ────────────────────────────────────────
 def collect_aliexpress(sb):
     count = 0
-    for keyword in PINK_KEYWORDS_EN[:4] + PINK_KEYWORDS_CN[:3]:
+    keywords = PINK_KEYWORDS_ALI + PINK_KEYWORDS_CN + PINK_KEYWORDS_EN[:8]
+    for keyword in keywords:
         url = f"https://www.aliexpress.com/wholesale?SearchText={quote(keyword)}&SortType=default"
         try:
             resp = requests.get(url, headers=HEADERS, timeout=15)
@@ -170,7 +262,7 @@ def collect_aliexpress(sb):
                     if image_url.startswith("//"):
                         image_url = "https:" + image_url
 
-                if save_product(sb, title, image_url, href, "aliexpress", keyword):
+                if save_product(sb, title, image_url, href, "aliexpress", keyword, require_image=True):
                     count += 1
 
             time.sleep(random.uniform(2, 4))
@@ -221,9 +313,39 @@ def collect_rakuten(sb):
 
 
 # ── Amazon（スクレイピング） ───────────────────────────────────────────
+AMAZON_KEYWORDS = [
+    # ネオン・ホット系
+    "ネオンピンク", "ホットピンク", "蛍光ピンク", "ショッキングピンク",
+    "neon pink", "hot pink", "electric pink",
+    # キラキラ・グリッター系
+    "ピンク グリッター", "ピンク スパンコール", "ピンク ラメ", "ピンク ラインストーン",
+    "pink glitter", "pink sequin", "pink rhinestone", "pink bling",
+    "ピンク キラキラ アクセサリー", "グリッター ピンク バッグ",
+    # ホログラム・オーロラ系
+    "ピンク ホログラム", "オーロラ ピンク", "ホログラフィック ピンク",
+    "holographic pink", "aurora pink", "iridescent pink",
+    # カテゴリ別
+    "ピンク ネオン サイン", "ピンク ネイル キラキラ", "ピンク スマホケース キラキラ",
+    "ピンク ドレス キラキラ", "ピンク バッグ キラキラ", "ピンク ヘアアクセ キラキラ",
+    "hot pink dress", "pink glitter shoes", "pink sequin bag",
+    "pink chrome nails", "fuchsia accessories", "magenta outfit",
+    # ローズ系
+    "ローズピンク", "rose pink", "deep rose",
+    # ノート・手帳・文具系（ピンク）
+    "ピンク ノート キラキラ", "ピンク 手帳 かわいい", "ピンク 日記帳",
+    "ピンク ダイアリー", "ピンク スケジュール帳", "ピンク 文具 キラキラ",
+    "ピンク 手帳 ラメ", "ネオンピンク ノート", "ホットピンク 手帳",
+    "pink journal glitter", "pink notebook sparkle", "pink diary holographic",
+    "pink planner rhinestone", "hot pink notebook", "pink glitter journal",
+    "pink spiral notebook", "pink stationery bling",
+    # シール・ステーショナリー系
+    "ピンク シール帳", "ピンク バインダー", "ピンク ステーショナリー",
+    "pink sticker book", "pink binder glitter",
+]
+
 def collect_amazon(sb):
     count = 0
-    for keyword in PINK_KEYWORDS_EN[:3] + PINK_KEYWORDS_JP[:2]:
+    for keyword in AMAZON_KEYWORDS:
         url = f"https://www.amazon.co.jp/s?k={quote(keyword)}"
         try:
             resp = requests.get(url, headers=HEADERS, timeout=15)
@@ -242,14 +364,121 @@ def collect_amazon(sb):
                 img_el = card.select_one("img.s-image")
                 image_url = img_el.get("src", "") if img_el else ""
 
+                # 価格取得
+                price = None
+                price_el = card.select_one(".a-price .a-offscreen, .a-price-whole")
+                if price_el:
+                    price = price_el.get_text(strip=True).replace("¥", "¥").strip()
+                    # "¥1,234" 形式に整える
+                    if price and not price.startswith("¥"):
+                        price = "¥" + price
+
                 product_url = f"https://www.amazon.co.jp/dp/{asin}"
 
-                if save_product(sb, title, image_url, product_url, "amazon", keyword):
+                if save_product(sb, title, image_url, product_url, "amazon", keyword, price=price):
                     count += 1
 
             time.sleep(random.uniform(3, 5))
         except Exception as e:
             print(f"  Amazon エラー ({keyword}): {e}")
+
+    return count
+
+
+# ── BUYMA（スクレイピング） ────────────────────────────────────────────
+# BUYMAカラーコード: CL10=ピンク系
+# 洋服（レディース・メンズ・キッズ）は除外、バッグ・シューズ・アクセサリーのみ対象
+BUYMA_PINK_URLS = [
+    ("/r/-C4-CL10/",           "バッグ × ピンク"),
+    ("/r/-C5-CL10/",           "シューズ × ピンク"),
+    ("/r/-C6-CL10/",           "アクセサリー × ピンク"),
+    ("/r/-C4-CL10/?page=2",    "バッグ × ピンク p2"),
+    ("/r/-C5-CL10/?page=2",    "シューズ × ピンク p2"),
+    ("/r/-C6-CL10/?page=2",    "アクセサリー × ピンク p2"),
+    ("/r/-C4-CL10/?page=3",    "バッグ × ピンク p3"),
+    ("/r/-C5-CL10/?page=3",    "シューズ × ピンク p3"),
+    ("/r/-C6-CL10/?page=3",    "アクセサリー × ピンク p3"),
+]
+
+# BUYMAで洋服と判定するキーワード（商品名に含まれていたらスキップ）
+BUYMA_CLOTHING_WORDS = [
+    "Tシャツ", "T-shirt", "tshirt", "カットソー", "ニット", "セーター", "sweater",
+    "パーカー", "hoodie", "スウェット", "sweatshirt", "ジャケット", "jacket",
+    "コート", "coat", "ブルゾン", "ワンピース", "dress", "スカート", "skirt",
+    "パンツ", "trousers", "shorts", "デニム", "jeans", "ショーツ", "ビキニ",
+    "swimwear", "水着", "ブラウス", "blouse", "シャツ", " shirt", "トップス",
+    "レギンス", "leggings", "タンクトップ", "tank", "ベスト", "vest",
+    "カーディガン", "cardigan", "polo", "ポロシャツ", "ロンT",
+]
+
+def collect_buyma(sb):
+    count = 0
+    headers = {
+        **HEADERS,
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Referer": "https://www.buyma.com/",
+    }
+    seen_global = set()
+    for path, label in BUYMA_PINK_URLS:
+        url = f"https://www.buyma.com{path}"
+        try:
+            resp = requests.get(url, headers=headers, timeout=15)
+            if resp.status_code != 200:
+                print(f"  BUYMA HTTP {resp.status_code} ({label})")
+                time.sleep(2)
+                continue
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            links = soup.select("a[href*='/item/']")
+            page_new = 0
+            for link in links:
+                href = link.get("href", "")
+                if not href or href in seen_global:
+                    continue
+                seen_global.add(href)
+                if not href.startswith("http"):
+                    href = "https://www.buyma.com" + href
+
+                # 商品名: syo_name属性 または img alt
+                title = link.get("syo_name", "")
+                if not title:
+                    img_el = link.select_one("img")
+                    title = img_el.get("alt", "") if img_el else ""
+                if not title or len(title) < 3:
+                    continue
+
+                # 画像
+                img_el = link.select_one("img")
+                image_url = ""
+                if img_el:
+                    image_url = img_el.get("src") or img_el.get("data-src", "")
+                    if image_url and image_url.startswith("//"):
+                        image_url = "https:" + image_url
+
+                title_lower = title.lower()
+
+                # 洋服スキップ
+                if any(w.lower() in title_lower for w in BUYMA_CLOTHING_WORDS):
+                    continue
+
+                # 価格取得（price属性 or 親要素のテキスト）
+                price = link.get("price", "")
+                if price:
+                    try:
+                        price = f"¥{int(price):,}"
+                    except:
+                        price = None
+                else:
+                    price = None
+
+                if save_product(sb, title, image_url, href, "buyma", label, price=price):
+                    count += 1
+                    page_new += 1
+
+            print(f"  [{label}] +{page_new}件")
+            time.sleep(random.uniform(2, 4))
+        except Exception as e:
+            print(f"  BUYMA エラー ({label}): {e}")
 
     return count
 
@@ -273,6 +502,9 @@ def main():
 
     print("\n📦 Amazon 収集中...")
     total += collect_amazon(sb)
+
+    print("\n📦 BUYMA 収集中...")
+    total += collect_buyma(sb)
 
     print("\n" + "=" * 50)
     print(f"🎉 完了！ 合計 {total} 件をSupabaseに登録しました")
