@@ -1,72 +1,115 @@
-# 💖 PINK CITY Collector
+# 💗 PINK CITY Collector
 
-> 世界中のPINK商品を自動収集して、Supabaseに登録するツール。
+> 世界中の「ギラギラ系ピンク」商品を自動収集して、キュレーションするプロジェクト。
 
-ネオン・ホットピンク・グリッター・ホログラム・オーロラ・ローズ系など、**ギラギラ・濃いピンク**に特化したキュレーションコレクター。
+ネオン・ホットピンク・グリッター・ホログラム・オーロラ・ラメ・スパンコール・ラインストーン系など、**キラキラ・濃いピンクに特化**したコレクター。
 
 ---
 
-## 何ができるの？
+## ファイル構成
 
-- 🔍 Amazon / AliExpress / 楽天 からPINK商品を自動収集
-- 🗄️ Supabaseへ自動登録（商品名・画像URL・商品URL）
-- 💖 レビューUI で 💗/✕ ワンタップ判定
-- 🚫 お花・植物系を自動スキップ
+| ファイル | 役割 |
+|---------|------|
+| `collector.py` | 商品収集スクリプト（全ソース） |
+| `gallery.html` / `index.html` | ギャラリーサイト（棚UI） |
+| `review.html` | レビュー・審査UI |
+| `backfill_prices.py` | 既存商品の価格を遡って取得 |
+| `setup_supabase.sql` | Supabaseテーブル作成SQL |
+| `.env` | APIキー（非公開） |
+
+---
+
+## 収集ソース
+
+| ソース | 収集方法 | 対象 |
+|--------|---------|------|
+| **Amazon** | スクレイピング | バッグ・アクセサリー・雑貨 |
+| **AliExpress** | スクレイピング | バッグ・アクセサリー・インテリア |
+| **BUYMA** | スクレイピング | バッグ・シューズ・アクセサリー（洋服除外） |
+| **Yahoo Shopping** | 公式API（V3） | 全カテゴリ |
+
+> ⚠️ Etsy はBANされたため停止中。
+
+---
+
+## フィルタリングルール
+
+収集した商品は以下の条件を**すべて満たす**ものだけDBに登録：
+
+1. **ピンク語を含む**（商品名にピンク・pink・ローズ・rose等）
+2. **ギラギラ語を含む**（グリッター・スパンコール・ラメ・ラインストーン・ホログラム・メタリック等）
+3. **除外ワードを含まない**（洋服・コスメ・魚・植物・音楽CD等）
 
 ---
 
 ## セットアップ
 
-### 1. パッケージインストール
 ```bash
-pip3 install supabase beautifulsoup4 requests
+pip3 install supabase beautifulsoup4 requests python-dotenv
 ```
 
-### 2. .envファイルを作成
-```bash
-cp .env.example .env
+`.env` を作成：
 ```
-`.env` を開いてSupabaseのURLとキーを入力。
+SUPABASE_URL=https://xxxxxxxxxx.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+YAHOO_APP_ID=xxxx
+```
 
-### 3. Supabaseにテーブル作成
-Supabase の SQL Editor で `setup_supabase.sql` を実行。
+Supabaseのテーブル作成：
+```sql
+-- setup_supabase.sql を Supabase SQL Editor で実行
+```
 
 ---
 
 ## 収集を実行する
 
 ```bash
-cd pink-city-collector
 source .env && python3 collector.py
 ```
 
 ---
 
-## レビューUIを使う
+## ギャラリーサイト（gallery.html / index.html）
 
-```bash
-python3 -m http.server 8888
-```
+承認済み商品をショップの棚スタイルで一覧表示するサイト。
 
-ブラウザで `http://localhost:8888/review.html` を開く。
-
-SupabaseのURLとAnon Keyを入力して「PINKを読み込む」→ 💗/✕ で判定するだけ！
+- **棚がカテゴリ別**に自動分類される（バッグ・ジュエリー・シューズ・ヘアアクセ・ネオンサイン・文具等）
+- ソースフィルター（ALL / Amazon / AliExpress / BUYMA / Yahoo）
+- キーワード検索
+- 価格表示（取得できているもののみ）
+- ホバーでネオングロー
 
 ---
 
-## 収集キーワード（一部）
+## レビューUI（review.html）
 
-| カテゴリ | キーワード例 |
-|---------|------------|
-| ネオン系 | neon pink, hot pink, electric pink |
-| キラキラ系 | pink glitter, pink sequin, pink sparkle |
-| ホログラム系 | holographic pink, aurora pink, iridescent pink |
-| ローズ系 | rose pink, deep rose, neon rose |
-| 中国語 | 荧光粉, 粉色亮片, 玫红色 |
-| 日本語 | ネオンピンク, ピンクラメ, オーロラピンク |
+収集されたpending商品を審査するUI。
+
+- 💗 ボタン → 承認（ギャラリーに表示される）
+- ✕ ボタン → 却下
+- ソースフィルター（ALL / Amazon / AliExpress / BUYMA / Yahoo）でソース別に審査可能
+- 承認済み・却下済み一覧からジャッジを変更可能
+- カードはジャッジ後もその場に残る（連続作業しやすい）
+
+---
+
+## Supabaseテーブル構造（pink_products）
+
+| カラム | 型 | 説明 |
+|-------|-----|------|
+| id | int8 | 自動採番 |
+| product_name | text | 商品名 |
+| image_url | text | 画像URL |
+| product_url | text | 商品ページURL（UNIQUE） |
+| source | text | amazon / aliexpress / buyma / yahoo |
+| status | text | pending / approved / rejected |
+| pink_keywords | text | ヒットしたキーワード |
+| price | text | 価格（¥1,234 形式） |
+| created_at | timestamptz | 登録日時 |
 
 ---
 
 ## これは何のプロジェクト？
 
-**PINK CITY** — 世界中の買えるPINK商品を全部集めることが目標の、純粋欲求プロジェクト。💖
+**PINK CITY** — 世界中の買えるギラギラ系ピンク商品を全部集めることが目標の、純粋欲求プロジェクト。💗

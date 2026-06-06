@@ -106,8 +106,31 @@ GLITTER_WORDS = [
 ]
 
 EXCLUDE_KEYWORDS = [
+    # 魚・水産・ペット・生き物系
+    "金魚", "熱帯魚", "錦鯉", "鯉", "めだか", "メダカ", "グッピー",
+    "アロワナ", "ベタ", "プラティ", "ネオンテトラ", "コリドラス",
+    "魚", "水槽", "アクアリウム", "aquarium", "fish",
+    "えさ", "餌", "飼料", "フィッシュ",
+    "サーモン", "マグロ", " タコ", "イカ釣", "エビ釣", "カニ釣",
+    "めだか", "メダカ", "稚魚",
+    # 洋服・アパレル系（全ソース共通除外）
+    "Tシャツ", "ティーシャツ", "t-shirt", "tshirt", "t shirt",
+    "ワンピース", "ドレス", "dress", "スカート", "skirt",
+    "ブラウス", "blouse", "シャツ", "shirt",
+    "ジャケット", "jacket", "コート", "coat", "アウター",
+    "パーカー", "hoodie", "スウェット", "sweatshirt",
+    "ニット", "セーター", "sweater", "カーディガン", "cardigan",
+    "パンツ", "ズボン", "trousers", "jeans", "デニム",
+    "レギンス", "leggings", "タイツ", "tights", "ストッキング",
+    "水着", "bikini", "swimsuit", "swimwear",
+    "ランジェリー", "ブラジャー", "bra", "lingerie", "下着", "パンティ",
+    "ルームウェア", "パジャマ", "pajama",
+    "トップス", "カットソー", "チュニック", "tunic",
+    "オールインワン", "jumpsuit", "romper",
+    "マフラー", "scarf", "ストール", "stole",
+    "手袋", "gloves", "帽子", "hat", "cap", "ハット", "キャップ", "ベレー帽",
     # お花・植物系
-    "フクシア", "fuchsia", "Fuchsia", "植物", "苗", "花", "園芸", "gardening",
+    "フクシア", "植物", "苗", "花", "園芸", "gardening",
     "garden", "planting", "flower", "floral", "bouquet", "botanical",
     # CD・音楽系のみ（ノート・手帳はOK）
     "remastered", "Remastered", "bonus track", "music album", "soundtrack",
@@ -483,6 +506,68 @@ def collect_buyma(sb):
     return count
 
 
+# ── Yahoo!ショッピング（公式API） ──────────────────────────────────────
+YAHOO_KEYWORDS = [
+    # ギラギラ×ピンク
+    "ピンク グリッター", "ピンク スパンコール", "ピンク ラメ", "ピンク ラインストーン",
+    "ピンク ホログラム", "オーロラ ピンク", "ピンク キラキラ",
+    "ネオンピンク", "ホットピンク", "ショッキングピンク",
+    "pink glitter", "pink rhinestone", "pink sequin", "holographic pink",
+    # ラグジュアリー×ピンク
+    "ピンク バッグ ラメ", "ピンク 財布 キラキラ", "ピンク アクセサリー ストーン",
+    "ピンク シューズ スパンコール", "ピンク ジュエリー クリスタル",
+    "ピンク 財布 ラインストーン", "ピンク バッグ スパンコール",
+]
+
+def collect_yahoo(sb):
+    YAHOO_APP_ID = os.environ.get("YAHOO_APP_ID", "")
+    if not YAHOO_APP_ID:
+        print("⚠️  YAHOO_APP_ID がないためスキップ")
+        return 0
+
+    count = 0
+    for keyword in YAHOO_KEYWORDS:
+        url = "https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch"
+        params = {
+            "appid": YAHOO_APP_ID,
+            "query": keyword,
+            "results": 100,
+            "sort": "-score",
+            "image_size": 500,
+        }
+        try:
+            resp = requests.get(url, params=params, headers=HEADERS, timeout=10)
+            data = resp.json()
+            hits = data.get("hits", [])
+
+            for item in hits:
+                title = item.get("name", "")
+                if not title:
+                    continue
+
+                # 画像
+                image = item.get("image", {})
+                image_url = image.get("medium", "") or image.get("small", "")
+
+                # URL
+                product_url = item.get("url", "") or item.get("externalUrl", "")
+                if not product_url:
+                    continue
+
+                # 価格
+                price_val = item.get("price", None)
+                price = f"¥{int(price_val):,}" if price_val else None
+
+                if save_product(sb, title, image_url, product_url, "yahoo", keyword, price=price):
+                    count += 1
+
+            time.sleep(0.5)
+        except Exception as e:
+            print(f"  Yahoo エラー ({keyword}): {e}")
+
+    return count
+
+
 # ── メイン ────────────────────────────────────────────────────────────
 def main():
     print("🌸 PINK CITY 収集スタート！")
@@ -505,6 +590,9 @@ def main():
 
     print("\n📦 BUYMA 収集中...")
     total += collect_buyma(sb)
+
+    print("\n📦 Yahoo!ショッピング 収集中...")
+    total += collect_yahoo(sb)
 
     print("\n" + "=" * 50)
     print(f"🎉 完了！ 合計 {total} 件をSupabaseに登録しました")

@@ -143,14 +143,15 @@ body::before {
 }
 .shelf-label-text {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: 3px;
-  color: #333;
+  color: #ff4db8;
+  text-shadow: 0 0 10px rgba(255,77,184,0.4);
 }
 .shelf-label-count {
   font-family: 'Share Tech Mono', monospace;
   font-size: 10px;
-  color: #282828;
+  color: #553344;
 }
 
 /* horizontal scroll row */
@@ -346,7 +347,8 @@ body::before {
     <button class="filter-btn active" data-src="all">ALL</button>
     <button class="filter-btn" data-src="amazon">AMAZON</button>
     <button class="filter-btn" data-src="aliexpress">ALI</button>
-    <button class="filter-btn" data-src="etsy">ETSY</button>
+    <button class="filter-btn" data-src="buyma">BUYMA</button>
+    <button class="filter-btn" data-src="yahoo">YAHOO</button>
   </div>
   <div id="status">表示中: <span id="count">0</span> 件</div>
 </div>
@@ -368,14 +370,79 @@ let allProducts = [];
 let currentFilter = 'all';
 let searchQuery = '';
 
-// Shelf labels per row index
-const SHELF_LABELS = [
-  'NEW ARRIVALS', 'HOT PINK', 'NEON GLOW', 'BLING BLING',
-  'GLITTER', 'HOLOGRAPHIC', 'AURORA', 'SPARKLE',
-  'ROSE', 'MAGENTA', 'ELECTRIC', 'FLAMINGO',
-  'CANDY', 'BUBBLEGUM', 'FUCHSIA', 'CORAL',
-  'SHIMMER', 'CRYSTAL', 'SEQUIN', 'METALLIC',
+// カテゴリ定義（順番＝棚の並び順）
+const CATEGORIES = [
+  {
+    id: 'bag',
+    label: '👜  BAGS & POUCHES',
+    emoji: '👜',
+    keywords: ['バッグ', 'ポーチ', 'ハンドバッグ', 'ショルダーバッグ', 'トートバッグ',
+               'クラッチ', 'リュック', '財布', 'ウォレット', '巾着', 'bag', 'pouch',
+               'handbag', 'shoulder', 'tote', 'clutch', 'backpack', 'wallet', 'purse'],
+  },
+  {
+    id: 'jewelry',
+    label: '💍  JEWELRY',
+    emoji: '💍',
+    keywords: ['ネックレス', 'リング', '指輪', 'ピアス', 'イヤリング', 'ブレスレット',
+               'バングル', 'チョーカー', 'アンクレット', 'ブローチ',
+               'necklace', 'ring', 'earring', 'bracelet', 'bangle', 'choker', 'brooch'],
+  },
+  {
+    id: 'hair',
+    label: '🎀  HAIR ACCESSORIES',
+    emoji: '🎀',
+    keywords: ['ヘアクリップ', 'ヘアピン', 'ヘアバンド', 'ヘアゴム', 'シュシュ',
+               'バレッタ', 'カチューシャ', 'ヘアアクセ', 'hair clip', 'hair pin',
+               'hair band', 'scrunchie', 'barrette', 'headband'],
+  },
+  {
+    id: 'shoes',
+    label: '👠  SHOES',
+    emoji: '👠',
+    keywords: ['シューズ', '靴', 'ヒール', 'パンプス', 'スニーカー', 'サンダル',
+               'ブーツ', 'ミュール', 'ローファー', 'フラット', '草履',
+               'shoe', 'heel', 'pump', 'sneaker', 'sandal', 'boot', 'mule'],
+  },
+  {
+    id: 'phone',
+    label: '📱  PHONE CASES',
+    emoji: '📱',
+    keywords: ['スマホケース', 'スマホカバー', 'iPhoneケース', 'スマートフォンケース',
+               'phone case', 'iphone case', 'phone cover'],
+  },
+  {
+    id: 'neon',
+    label: '🪩  NEON SIGNS & LIGHTS',
+    emoji: '🪩',
+    keywords: ['ネオンサイン', 'ネオンライト', 'LEDサイン', 'LED ライト', 'LED ネオン',
+               'neon sign', 'neon light', 'led sign', 'led light'],
+  },
+  {
+    id: 'stationery',
+    label: '📓  STATIONERY',
+    emoji: '📓',
+    keywords: ['ノート', '手帳', 'メモ帳', 'スケジュール帳', 'ダイアリー',
+               'notebook', 'diary', 'planner', 'journal'],
+  },
+  {
+    id: 'other',
+    label: '✨  OTHER PINK STUFF',
+    emoji: '✨',
+    keywords: [], // catch-all
+  },
 ];
+
+function categorize(product) {
+  const name = (product.product_name || '').toLowerCase();
+  for (const cat of CATEGORIES) {
+    if (cat.id === 'other') continue;
+    if (cat.keywords.some(kw => name.includes(kw.toLowerCase()))) {
+      return cat.id;
+    }
+  }
+  return 'other';
+}
 
 async function fetchAll() {
   let all = [];
@@ -445,11 +512,18 @@ function renderShelves(products) {
   document.getElementById('empty').style.display = products.length ? 'none' : 'block';
   document.getElementById('count').textContent = products.length;
 
-  // Split into shelves
-  for (let i = 0; i < products.length; i += SHELF_SIZE) {
-    const chunk = products.slice(i, i + SHELF_SIZE);
-    const shelfIdx = Math.floor(i / SHELF_SIZE);
-    const label = SHELF_LABELS[shelfIdx % SHELF_LABELS.length];
+  // カテゴリ別に仕分け
+  const buckets = {};
+  CATEGORIES.forEach(cat => { buckets[cat.id] = []; });
+  products.forEach(p => {
+    const catId = categorize(p);
+    buckets[catId].push(p);
+  });
+
+  // 棚を描画（アイテムがあるカテゴリのみ）
+  CATEGORIES.forEach(cat => {
+    const items = buckets[cat.id];
+    if (items.length === 0) return;
 
     const section = document.createElement('div');
     section.className = 'shelf-section';
@@ -457,14 +531,13 @@ function renderShelves(products) {
     const labelEl = document.createElement('div');
     labelEl.className = 'shelf-label';
     labelEl.innerHTML = `
-      <span class="shelf-label-text">${label}</span>
-      <span class="shelf-label-count">${chunk.length} items</span>
+      <span class="shelf-label-text">${cat.label}</span>
+      <span class="shelf-label-count">${items.length} items</span>
     `;
 
     const row = document.createElement('div');
     row.className = 'shelf-row';
-
-    chunk.forEach(p => row.appendChild(makeCard(p)));
+    items.forEach(p => row.appendChild(makeCard(p)));
 
     const floor = document.createElement('div');
     floor.className = 'shelf-floor';
@@ -473,7 +546,7 @@ function renderShelves(products) {
     section.appendChild(row);
     section.appendChild(floor);
     container.appendChild(section);
-  }
+  });
 }
 
 function refresh() {

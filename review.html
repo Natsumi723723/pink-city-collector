@@ -23,6 +23,8 @@
     letter-spacing: 4px;
     text-shadow: 0 0 20px #ff006e, 0 0 40px #ff4db8;
   }
+
+  /* ── STATS ── */
   .stats {
     display: flex;
     justify-content: center;
@@ -32,6 +34,76 @@
     font-size: 14px;
     color: #ff4db8;
   }
+  .stat-btn {
+    background: none;
+    border: none;
+    color: #ff4db8;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 20px;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .stat-btn:hover { background: rgba(255,0,110,0.15); transform: scale(1.05); }
+  .stat-btn.active { background: rgba(255,0,110,0.25); outline: 1px solid #ff006e; }
+
+  /* ── SOURCE FILTER ── */
+  .source-filter {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #0d0d0d;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .src-btn {
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    color: #888;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .src-btn:hover { border-color: #ff4db8; color: #ff4db8; }
+  .src-btn.active {
+    background: linear-gradient(135deg, #ff006e22, #ff4db822);
+    border-color: #ff006e;
+    color: #ff4db8;
+    box-shadow: 0 0 8px rgba(255,0,110,0.3);
+  }
+
+  /* ── MODE INDICATOR ── */
+  #mode-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    background: #1a0010;
+    border-bottom: 1px solid #330022;
+    font-size: 12px;
+    color: #ff4db8;
+  }
+  #mode-bar.visible { display: flex; }
+  #mode-label { letter-spacing: 1px; }
+  #back-btn {
+    background: none;
+    border: 1px solid #330022;
+    color: #888;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  #back-btn:hover { border-color: #ff4db8; color: #ff4db8; }
+
+  /* ── GRID ── */
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -49,6 +121,10 @@
     position: relative;
   }
   .card:hover { transform: translateY(-3px); border-color: #ff4db8; }
+  /* ステータス別ボーダー */
+  .card[data-status="approved"] { border-color: rgba(255,0,110,0.4); }
+  .card[data-status="rejected"] { border-color: rgba(80,80,80,0.5); opacity: 0.7; }
+
   .card img {
     width: 100%;
     aspect-ratio: 1;
@@ -85,8 +161,29 @@
   }
   .btn:hover { opacity: 0.8; transform: scale(1.05); }
   .btn:active { transform: scale(0.95); }
-  .btn-approve { background: #ff006e; }
-  .btn-reject { background: #2a2a2a; }
+  .btn-approve { background: #ff006e; color: #fff; }
+  .btn-reject { background: #2a2a2a; color: #fff; }
+  .btn-change {
+    flex: 1;
+    padding: 8px 6px;
+    border: none;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-change:hover { opacity: 0.85; transform: scale(1.03); }
+  .btn-change:active { transform: scale(0.96); }
+  .btn-change-reject  { background: #3a1a1a; color: #ff6688; border: 1px solid #551122; }
+  .btn-change-approve { background: #1a0d1a; color: #ff4db8; border: 1px solid #550055; }
+  .btn-change-pending { background: #1a1a2a; color: #8899ff; border: 1px solid #223366; }
+
+  /* 現在のステータスを光らせる */
+  .card[data-status="approved"] .btn-approve { box-shadow: 0 0 10px #ff006e; }
+  .card[data-status="rejected"] .btn-reject { box-shadow: 0 0 10px #555; }
+
   .card-link {
     position: absolute;
     top: 8px;
@@ -107,14 +204,22 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 60px;
+    font-size: 52px;
     border-radius: 12px;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 0.3s;
+    transition: opacity 0.15s;
   }
-  .card.approved .done-overlay { background: rgba(255,0,110,0.6); opacity: 1; }
-  .card.rejected .done-overlay { background: rgba(0,0,0,0.7); opacity: 1; }
+  /* ジャッジ済み：オーバーレイ表示、カードは残す */
+  .card.judged-approved .done-overlay { background: rgba(255,0,110,0.55); opacity: 1; }
+  .card.judged-rejected .done-overlay { background: rgba(0,0,0,0.65); opacity: 1; }
+  .card.judged-approved { border-color: rgba(255,0,110,0.5); }
+  .card.judged-rejected { opacity: 0.45; }
+  /* ボタンを非活性っぽく */
+  .card.judged-approved .btn-approve,
+  .card.judged-rejected .btn-reject { opacity: 0.3; cursor: default; }
+
+  /* ── CONFIG ── */
   .config-panel {
     background: #111;
     border: 1px solid #ff006e;
@@ -148,6 +253,7 @@
     letter-spacing: 2px;
   }
   #loading { text-align: center; padding: 60px; color: #ff4db8; font-size: 18px; }
+  #empty { text-align: center; padding: 60px; color: #444; font-size: 14px; display: none; }
 </style>
 </head>
 <body>
@@ -157,9 +263,23 @@
 </header>
 
 <div class="stats" id="stats">
-  <span>💗 承認済み: <strong id="approved-count">0</strong></span>
-  <span>⏳ 未レビュー: <strong id="pending-count">0</strong></span>
-  <span>✕ 却下: <strong id="rejected-count">0</strong></span>
+  <button class="stat-btn" id="btn-pending"  onclick="showMode('pending')">⏳ 未レビュー: <strong id="pending-count">0</strong></button>
+  <button class="stat-btn" id="btn-approved" onclick="showMode('approved')">💗 承認済み: <strong id="approved-count">0</strong></button>
+  <button class="stat-btn" id="btn-rejected" onclick="showMode('rejected')">✕ 却下: <strong id="rejected-count">0</strong></button>
+</div>
+
+<div class="source-filter" id="source-filter" style="display:none">
+  <button class="src-btn active" data-source="all" onclick="setSource('all')">🌐 ALL</button>
+  <button class="src-btn" data-source="amazon" onclick="setSource('amazon')">📦 Amazon</button>
+  <button class="src-btn" data-source="aliexpress" onclick="setSource('aliexpress')">🛒 AliExpress</button>
+  <button class="src-btn" data-source="buyma" onclick="setSource('buyma')">👜 BUYMA</button>
+  <button class="src-btn" data-source="yahoo" onclick="setSource('yahoo')">🛍 Yahoo</button>
+  <button class="src-btn" data-source="rakuten" onclick="setSource('rakuten')">🎉 楽天</button>
+</div>
+
+<div id="mode-bar">
+  <span id="mode-label"></span>
+  <button id="back-btn" onclick="showMode('pending')">← 未レビューに戻る</button>
 </div>
 
 <div class="config-panel" id="config-panel">
@@ -172,9 +292,12 @@
 
 <div id="loading" style="display:none">読み込み中... 💗</div>
 <div class="grid" id="grid"></div>
+<div id="empty">該当する商品はありません 💗</div>
 
 <script>
 let supabaseUrl = '', supabaseKey = '';
+let currentMode = 'pending'; // pending / approved / rejected
+let currentSource = 'all';   // all / amazon / aliexpress / buyma / yahoo / rakuten
 
 async function sbFetch(path, options = {}) {
   const controller = new AbortController();
@@ -192,10 +315,7 @@ async function sbFetch(path, options = {}) {
     });
     clearTimeout(timer);
     const text = await res.text();
-    if (!res.ok) {
-      console.error('Supabase error:', res.status, text);
-      return [];
-    }
+    if (!res.ok) { console.error('Supabase error:', res.status, text); return []; }
     try { return JSON.parse(text); } catch(e) { return []; }
   } catch(e) {
     clearTimeout(timer);
@@ -213,18 +333,12 @@ async function loadProducts() {
   localStorage.setItem('sb-key', supabaseKey);
 
   document.getElementById('config-panel').style.display = 'none';
+  document.getElementById('source-filter').style.display = 'flex';
   document.getElementById('loading').style.display = 'block';
 
   try {
-    const data = await sbFetch('pink_products?status=eq.pending&order=created_at.desc&limit=500&select=id,product_name,image_url,product_url,source');
-    document.getElementById('loading').style.display = 'none';
-    if (!Array.isArray(data) || data.length === 0) {
-      document.getElementById('grid').innerHTML = '<p style="color:#ff4db8;padding:40px;text-align:center">接続エラーまたは商品なし。URLとKeyを確認してください。</p>';
-      document.getElementById('config-panel').style.display = 'block';
-      return;
-    }
-    renderGrid(data);
-    updateStats();
+    await showMode('pending');
+    await updateStats();
   } catch(e) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('config-panel').style.display = 'block';
@@ -232,25 +346,79 @@ async function loadProducts() {
   }
 }
 
-function renderGrid(products) {
+async function showMode(mode) {
+  if (!supabaseUrl) return;
+  currentMode = mode;
+
+  // ボタンのactive状態
+  ['pending','approved','rejected'].forEach(m => {
+    document.getElementById('btn-' + m).classList.toggle('active', m === mode);
+  });
+
+  // モードバー
+  const modeBar = document.getElementById('mode-bar');
+  const modeLabel = document.getElementById('mode-label');
+  const backBtn = document.getElementById('back-btn');
+  if (mode === 'pending') {
+    modeBar.classList.remove('visible');
+  } else {
+    modeBar.classList.add('visible');
+    modeLabel.textContent = mode === 'approved' ? '💗 承認済み一覧 — ジャッジを変更できます' : '✕ 却下一覧 — ジャッジを変更できます';
+    backBtn.style.display = mode === 'pending' ? 'none' : '';
+  }
+
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('grid').innerHTML = '';
+  document.getElementById('empty').style.display = 'none';
+
+  const srcFilter = currentSource !== 'all' ? `&source=eq.${currentSource}` : '';
+  const data = await sbFetch(`pink_products?status=eq.${mode}${srcFilter}&order=created_at.desc&limit=500&select=id,product_name,image_url,product_url,source`);
+  document.getElementById('loading').style.display = 'none';
+
+  if (!Array.isArray(data) || data.length === 0) {
+    if (!supabaseUrl) {
+      document.getElementById('config-panel').style.display = 'block';
+    } else {
+      document.getElementById('empty').style.display = 'block';
+    }
+    return;
+  }
+  renderGrid(data, mode);
+}
+
+function renderGrid(products, mode) {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
-  if (!products.length) { grid.innerHTML = '<p style="color:#666;padding:40px">未レビューの商品はありません</p>'; return; }
 
   products.forEach(p => {
     const card = document.createElement('div');
     card.className = 'card';
     card.dataset.id = p.id;
+    card.dataset.status = mode;
+
+    // ボタン：現在のステータス以外の選択肢を表示
+    let actionBtns = '';
+    if (mode === 'pending') {
+      actionBtns = `
+        <button class="btn btn-approve" onclick="review('${p.id}', 'approved', this)">💗</button>
+        <button class="btn btn-reject"  onclick="review('${p.id}', 'rejected', this)">✕</button>`;
+    } else if (mode === 'approved') {
+      actionBtns = `
+        <button class="btn-change btn-change-reject"  onclick="review('${p.id}', 'rejected', this)">✕ 却下</button>
+        <button class="btn-change btn-change-pending" onclick="review('${p.id}', 'pending', this)">↩ 未レビュー</button>`;
+    } else if (mode === 'rejected') {
+      actionBtns = `
+        <button class="btn-change btn-change-approve" onclick="review('${p.id}', 'approved', this)">💗 承認</button>
+        <button class="btn-change btn-change-pending" onclick="review('${p.id}', 'pending', this)">↩ 未レビュー</button>`;
+    }
+
     card.innerHTML = `
       <img src="${p.image_url || ''}" alt="${p.product_name}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23222%22 width=%22100%22 height=%22100%22/><text x=%2250%22 y=%2255%22 font-size=%2230%22 text-anchor=%22middle%22 fill=%22%23ff4db8%22>💗</text></svg>'">
       <a class="card-link" href="${p.product_url}" target="_blank">🔗</a>
       <div class="card-body">
         <div class="card-source">${p.source || ''}</div>
         <div class="card-name">${p.product_name}</div>
-        <div class="card-actions">
-          <button class="btn btn-approve" onclick="review('${p.id}', 'approved', this)">💗</button>
-          <button class="btn btn-reject" onclick="review('${p.id}', 'rejected', this)">✕</button>
-        </div>
+        <div class="card-actions">${actionBtns}</div>
       </div>
       <div class="done-overlay" id="overlay-${p.id}"></div>
     `;
@@ -258,11 +426,33 @@ function renderGrid(products) {
   });
 }
 
-async function review(id, status, btn) {
-  btn.disabled = true;
-  const emoji = status === 'approved' ? '💗' : '✕';
+async function review(id, newStatus, btn) {
+  // 即座にUI更新（待ち時間ゼロ）
+  const card = document.querySelector(`[data-id="${id}"]`);
+  const overlay = document.getElementById('overlay-' + id);
+  const emoji = newStatus === 'approved' ? '💗' : newStatus === 'rejected' ? '✕' : '↩';
 
-  await fetch(supabaseUrl + '/rest/v1/pink_products?id=eq.' + id, {
+  // ボタン両方を無効化
+  card.querySelectorAll('button').forEach(b => b.disabled = true);
+
+  // オーバーレイ表示（カードはその場に残る）
+  overlay.textContent = emoji;
+  card.classList.remove('judged-approved', 'judged-rejected');
+  if (newStatus === 'approved') card.classList.add('judged-approved');
+  else if (newStatus === 'rejected') card.classList.add('judged-rejected');
+  else {
+    // pending に戻す場合はオーバーレイを消してカード復元
+    overlay.textContent = '';
+    card.classList.remove('judged-approved', 'judged-rejected');
+    if (currentMode !== 'pending') {
+      card.style.transition = 'opacity 0.3s';
+      card.style.opacity = '0';
+      setTimeout(() => card.remove(), 300);
+    }
+  }
+
+  // バックグラウンドでDB更新（UIをブロックしない）
+  fetch(supabaseUrl + '/rest/v1/pink_products?id=eq.' + id, {
     method: 'PATCH',
     headers: {
       'apikey': supabaseKey,
@@ -270,33 +460,69 @@ async function review(id, status, btn) {
       'Content-Type': 'application/json',
       'Prefer': 'return=minimal',
     },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status: newStatus }),
+  }).then(() => updateStats());
+}
+
+function setSource(source) {
+  currentSource = source;
+  // ボタンのactive切り替え
+  document.querySelectorAll('.src-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.source === source);
   });
+  // 現在のモードで再読み込み
+  showMode(currentMode);
+}
 
-  const card = document.querySelector(`[data-id="${id}"]`);
-  const overlay = document.getElementById('overlay-' + id);
-  overlay.textContent = emoji;
-  card.classList.add(status);
-
-  setTimeout(() => { card.style.opacity = '0.3'; }, 500);
-  updateStats();
+async function getCount(status) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10000);
+  const srcFilter = currentSource !== 'all' ? `&source=eq.${currentSource}` : '';
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/pink_products?status=eq.${status}${srcFilter}&select=id`, {
+      signal: controller.signal,
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': 'Bearer ' + supabaseKey,
+        'Prefer': 'count=exact',
+        'Range-Unit': 'items',
+        'Range': '0-0',
+      },
+    });
+    clearTimeout(timer);
+    const range = res.headers.get('Content-Range') || '';
+    const match = range.match(/\/(\d+)$/);
+    return match ? parseInt(match[1]) : 0;
+  } catch(e) {
+    clearTimeout(timer);
+    return 0;
+  }
 }
 
 async function updateStats() {
-  const data = await sbFetch('pink_products?select=status');
-  const counts = { approved: 0, pending: 0, rejected: 0 };
-  data.forEach(r => counts[r.status] = (counts[r.status] || 0) + 1);
-  document.getElementById('approved-count').textContent = counts.approved;
-  document.getElementById('pending-count').textContent = counts.pending;
-  document.getElementById('rejected-count').textContent = counts.rejected;
+  const [approved, pending, rejected] = await Promise.all([
+    getCount('approved'),
+    getCount('pending'),
+    getCount('rejected'),
+  ]);
+  document.getElementById('approved-count').textContent = approved;
+  document.getElementById('pending-count').textContent = pending;
+  document.getElementById('rejected-count').textContent = rejected;
 }
 
-// 保存済みの設定を復元
 window.onload = () => {
   const url = localStorage.getItem('sb-url');
   const key = localStorage.getItem('sb-key');
   if (url) document.getElementById('sb-url').value = url;
   if (key) document.getElementById('sb-key').value = key;
+  if (url && key) {
+    // 前回のキー情報があれば自動ロード
+    supabaseUrl = url;
+    supabaseKey = key;
+    document.getElementById('config-panel').style.display = 'none';
+    document.getElementById('source-filter').style.display = 'flex';
+    showMode('pending').then(() => updateStats());
+  }
 };
 </script>
 </body>
