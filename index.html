@@ -221,6 +221,8 @@ body::before {
   overflow-y: scroll;
   overflow-x: hidden;
   scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* ── SHELF ── */
@@ -503,14 +505,28 @@ body::before {
    SKIN 1: RHINESTONE QUEEN (default)
 ══════════════════════════════════════════════ */
 body[data-skin="rhinestone"] {
-  --bg: #c8005a;
-  background-color: #c8005a;
+  --bg: #aa0048;
+  background-color: #aa0048;
+  /* ラインストーン六方充填パターン */
   background-image:
-    /* SVGノイズフィルターでラメ粒子テクスチャ */
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='4' seed='5' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 0.85 0 0 0 0 0.92 0 0 0 28 -11'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.65'/%3E%3C/svg%3E"),
-    linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
-  background-size: 200px 200px, 100% 100%;
-  background-blend-mode: screen, normal;
+    radial-gradient(circle at 50% 40%,
+      #fff        0%,
+      #ffd0ea    18%,
+      #ff60b0    40%,
+      #cc0060    65%,
+      #880040    85%,
+      transparent 100%
+    ),
+    radial-gradient(circle at 50% 40%,
+      #fff        0%,
+      #ffd0ea    18%,
+      #ff60b0    40%,
+      #cc0060    65%,
+      #880040    85%,
+      transparent 100%
+    );
+  background-size: 13px 15px, 13px 15px;
+  background-position: 0 0, 6.5px 7.5px;
 }
 body[data-skin="rhinestone"]::after { content: none; }
 body[data-skin="rhinestone"] #main::before { content: none; }
@@ -993,7 +1009,8 @@ function setSkin(skin) {
     el.classList.toggle('active', el.dataset.skin === skin);
   });
   document.getElementById('skin-panel').classList.remove('open');
-  showGlitterCanvas(skin === 'rhinestone');
+  // rhinestoneはCSSパターンで背景完結、canvasは使わない
+  showGlitterCanvas(false);
 }
 
 function toggleSkinPanel() {
@@ -1018,7 +1035,7 @@ document.addEventListener('click', e => {
     document.querySelectorAll('.skin-option').forEach(el => {
       el.classList.toggle('active', el.dataset.skin === saved);
     });
-    showGlitterCanvas(saved === 'rhinestone');
+    showGlitterCanvas(false);
   });
 })();
 
@@ -1283,6 +1300,8 @@ function adjustLayout() {
   mainEl.style.top = (headerH + countsH) + 'px';
 }
 window.addEventListener('resize', adjustLayout);
+// フォント読み込み後も再計算
+document.fonts && document.fonts.ready.then(adjustLayout);
 
 // Init
 (async () => {
