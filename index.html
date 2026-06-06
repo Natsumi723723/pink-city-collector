@@ -74,8 +74,7 @@ body::before {
   #filters::-webkit-scrollbar { display: none; }
   #skin-btn { margin-left: auto; }
   /* style-counts bar と main の位置調整はJSで動的計算 */
-  #style-counts { top: auto !important; }
-  #main { top: auto !important; }
+  /* topはJSで動的設定 */
 }
 
 #logo {
@@ -1309,7 +1308,8 @@ document.fonts && document.fonts.ready.then(adjustLayout);
   setTimeout(() => { document.getElementById('loading-screen').style.display = 'none'; }, 400);
   adjustLayout();
   renderShelves(getFiltered());
-  fetchStyleCounts();
+  await fetchStyleCounts();
+  adjustLayout(); // style-counts表示後に再計算
 })();
 </script>
 </body>
