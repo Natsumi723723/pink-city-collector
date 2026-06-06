@@ -20,12 +20,16 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-html, body {
+html {
   width: 100%; height: 100%;
+  background: var(--bg);
+}
+body {
+  width: 100%; min-height: 100%;
   background: var(--bg);
   color: #fff;
   font-family: 'Noto Sans JP', sans-serif;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 /* scanlines */
@@ -45,14 +49,13 @@ body::before {
   background: #050505;
   border-bottom: 1px solid #1a1a1a;
   z-index: 100;
-  /* Desktop: 1行 */
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 0 16px;
   height: 56px;
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow: visible;
 }
 
 @media (max-width: 680px) {
@@ -216,13 +219,8 @@ body::before {
 
 /* ── MAIN SCROLL AREA ── */
 #main {
-  position: fixed;
-  top: 106px; left: 0; right: 0; bottom: 0;
-  overflow-y: scroll;
-  overflow-x: hidden;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  position: relative;
+  /* topはJSのadjustLayoutで padding-top として設定 */
 }
 
 /* ── SHELF ── */
@@ -1290,10 +1288,10 @@ function adjustLayout() {
   const mainEl   = document.getElementById('main');
   countsEl.style.top = headerH + 'px';
   const countsH = countsEl.offsetHeight;
-  mainEl.style.top = (headerH + countsH) + 'px';
+  // #mainはposition:relativeなのでpadding-topで押し下げ
+  mainEl.style.paddingTop = (headerH + countsH) + 'px';
 }
 window.addEventListener('resize', adjustLayout);
-// フォント読み込み後も再計算
 document.fonts && document.fonts.ready.then(adjustLayout);
 
 // Init
