@@ -47,6 +47,183 @@
   .stat-btn:hover { background: rgba(255,0,110,0.15); transform: scale(1.05); }
   .stat-btn.active { background: rgba(255,0,110,0.25); outline: 1px solid #ff006e; }
 
+  /* ── GAME BAR ── */
+  #game-bar {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 8px 20px;
+    background: #0a0a0a;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  #game-bar.visible { display: flex; }
+  .game-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+  .game-stat-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #666;
+    text-transform: uppercase;
+  }
+  .game-stat-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 20px;
+    font-weight: bold;
+    color: #ff4db8;
+    text-shadow: 0 0 10px rgba(255,77,184,0.5);
+    transition: transform 0.15s;
+  }
+  .game-stat-value.bump {
+    transform: scale(1.4);
+    color: #ff006e;
+    text-shadow: 0 0 20px rgba(255,0,110,0.8);
+  }
+  #streak-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+  #streak-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #666;
+    text-transform: uppercase;
+  }
+  #streak-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 20px;
+    font-weight: bold;
+    color: #555;
+    transition: all 0.2s;
+  }
+  #streak-value.hot {
+    color: #ff006e;
+    text-shadow: 0 0 12px rgba(255,0,110,0.7);
+    animation: streakPulse 0.6s ease;
+  }
+  @keyframes streakPulse {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.5) rotate(-5deg); }
+    100% { transform: scale(1); }
+  }
+
+  /* ── METERS ── */
+  #meters {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 24px;
+    background: #080808;
+    border-bottom: 1px solid #111;
+  }
+  #meters.visible { display: flex; }
+  .meter-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .meter-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    color: #555;
+    width: 110px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+  }
+  .meter-track {
+    flex: 1;
+    height: 5px;
+    background: #1a1a1a;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .meter-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.4s cubic-bezier(0.34,1.2,0.64,1);
+  }
+  #milestone-fill {
+    background: linear-gradient(90deg, #ff006e, #ff4db8);
+    box-shadow: 0 0 6px rgba(255,0,110,0.5);
+  }
+  #daily-fill {
+    background: linear-gradient(90deg, #cc00ff, #ff4db8);
+    box-shadow: 0 0 6px rgba(200,0,255,0.4);
+  }
+  #approve-fill {
+    background: linear-gradient(90deg, #ff006e, #ff4db8);
+    box-shadow: 0 0 6px rgba(255,0,110,0.4);
+  }
+  #reject-fill {
+    background: #2a2a2a;
+  }
+  .meter-value {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #444;
+    width: 60px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  /* デイリーゴール入力 */
+  #daily-goal-input {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #333;
+    color: #666;
+    width: 30px;
+    text-align: center;
+    outline: none;
+    cursor: pointer;
+  }
+  #daily-goal-input:focus { border-color: #ff4db8; color: #ff4db8; }
+
+  /* ── MILESTONE TOAST ── */
+  #milestone-popup {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0f0f0f;
+    border: 1px solid #ff006e;
+    border-radius: 12px;
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 1000;
+    box-shadow: 0 0 20px rgba(255,0,110,0.3);
+    pointer-events: none;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s;
+  }
+  #milestone-popup.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  #milestone-emoji { font-size: 22px; }
+  #milestone-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: #ff006e;
+    text-shadow: 0 0 10px rgba(255,0,110,0.5);
+  }
+  #milestone-sub {
+    font-size: 11px;
+    color: #ff4db8;
+    letter-spacing: 1px;
+  }
+
   /* ── SOURCE FILTER ── */
   .source-filter {
     display: flex;
@@ -268,13 +445,69 @@
   <button class="stat-btn" id="btn-rejected" onclick="showMode('rejected')">✕ 却下: <strong id="rejected-count">0</strong></button>
 </div>
 
+<!-- Milestone popup -->
+<div id="milestone-popup">
+  <div id="milestone-emoji">🎉</div>
+  <div>
+    <div id="milestone-text">100 JUDGES!</div>
+    <div id="milestone-sub">YOU'RE ON FIRE 🔥</div>
+  </div>
+</div>
+
+<!-- Meters -->
+<div id="meters">
+  <div class="meter-row">
+    <div class="meter-label">NEXT MILESTONE</div>
+    <div class="meter-track"><div class="meter-fill" id="milestone-fill" style="width:0%"></div></div>
+    <div class="meter-value" id="milestone-meter-val">0/10</div>
+  </div>
+  <div class="meter-row">
+    <div class="meter-label">TODAY'S GOAL</div>
+    <div class="meter-track"><div class="meter-fill" id="daily-fill" style="width:0%"></div></div>
+    <div class="meter-value">
+      <span id="daily-current">0</span>/<input id="daily-goal-input" type="number" value="50" min="1" max="999" title="目標を変更">
+    </div>
+  </div>
+  <div class="meter-row">
+    <div class="meter-label">💗 APPROVE RATE</div>
+    <div class="meter-track" style="display:flex;gap:1px">
+      <div class="meter-fill" id="approve-fill" style="width:50%"></div>
+      <div class="meter-fill" id="reject-fill" style="width:50%"></div>
+    </div>
+    <div class="meter-value" id="approve-rate-val">-%</div>
+  </div>
+</div>
+
+<!-- Game bar -->
+<div id="game-bar">
+  <div class="game-stat">
+    <div class="game-stat-label">TODAY</div>
+    <div class="game-stat-value" id="today-count">0</div>
+  </div>
+  <div class="game-stat">
+    <div class="game-stat-label">TOTAL</div>
+    <div class="game-stat-value" id="total-count">0</div>
+  </div>
+  <div id="streak-wrap">
+    <div id="streak-label">STREAK</div>
+    <div id="streak-value">0🔥</div>
+  </div>
+</div>
+
+<div class="source-filter" id="style-filter" style="display:none">
+  <button class="src-btn active" data-style="all"     onclick="setStyle('all')">ALL</button>
+  <button class="src-btn" data-style="glitter"  onclick="setStyle('glitter')">✨ GLITTER</button>
+  <button class="src-btn" data-style="neon"     onclick="setStyle('neon')">🌈 NEON</button>
+  <button class="src-btn" data-style="leopard"  onclick="setStyle('leopard')">🐆 LEOPARD</button>
+  <button class="src-btn" data-style="clear"    onclick="setStyle('clear')">🫧 CLEAR</button>
+</div>
+
 <div class="source-filter" id="source-filter" style="display:none">
   <button class="src-btn active" data-source="all" onclick="setSource('all')">🌐 ALL</button>
   <button class="src-btn" data-source="amazon" onclick="setSource('amazon')">📦 Amazon</button>
   <button class="src-btn" data-source="aliexpress" onclick="setSource('aliexpress')">🛒 AliExpress</button>
   <button class="src-btn" data-source="buyma" onclick="setSource('buyma')">👜 BUYMA</button>
   <button class="src-btn" data-source="yahoo" onclick="setSource('yahoo')">🛍 Yahoo</button>
-  <button class="src-btn" data-source="rakuten" onclick="setSource('rakuten')">🎉 楽天</button>
 </div>
 
 <div id="mode-bar">
@@ -296,8 +529,128 @@
 
 <script>
 let supabaseUrl = '', supabaseKey = '';
-let currentMode = 'pending'; // pending / approved / rejected
-let currentSource = 'all';   // all / amazon / aliexpress / buyma / yahoo / rakuten
+let currentMode = 'pending';
+let currentSource = 'all';
+let currentStyle = 'all';
+
+// ── ゲーミフィケーション ──
+const MILESTONES = [
+  { n: 10,   emoji: '✨', text: '10 JUDGES!',   sub: 'いい調子！' },
+  { n: 25,   emoji: '💅', text: '25 JUDGES!',   sub: 'ノってきた！' },
+  { n: 50,   emoji: '🔥', text: '50 JUDGES!',   sub: 'フィフティ達成！' },
+  { n: 100,  emoji: '💗', text: '100 JUDGES!',  sub: 'センター達成！YOU\'RE ON FIRE🔥' },
+  { n: 200,  emoji: '🌸', text: '200 JUDGES!',  sub: 'マジやばい！！' },
+  { n: 300,  emoji: '👑', text: '300 JUDGES!',  sub: 'PINK CITY の女王！' },
+  { n: 500,  emoji: '🪩', text: '500 JUDGES!',  sub: 'レジェンド級...' },
+  { n: 1000, emoji: '🎆', text: '1000 JUDGES!', sub: 'もはや神' },
+];
+
+function getToday() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function loadGameStats() {
+  const saved = localStorage.getItem('pinkc_today_date');
+  const today = getToday();
+  if (saved !== today) {
+    localStorage.setItem('pinkc_today_date', today);
+    localStorage.setItem('pinkc_today_count', '0');
+  }
+  return {
+    today: parseInt(localStorage.getItem('pinkc_today_count') || '0'),
+    total: parseInt(localStorage.getItem('pinkc_total_count') || '0'),
+    streak: parseInt(localStorage.getItem('pinkc_streak') || '0'),
+  };
+}
+
+function saveGameStats(stats) {
+  localStorage.setItem('pinkc_today_count', stats.today);
+  localStorage.setItem('pinkc_total_count', stats.total);
+  localStorage.setItem('pinkc_streak', stats.streak);
+}
+
+function updateGameUI() {
+  const stats = loadGameStats();
+  document.getElementById('today-count').textContent = stats.today;
+  document.getElementById('total-count').textContent = stats.total;
+  const sv = document.getElementById('streak-value');
+  sv.textContent = stats.streak + (stats.streak >= 5 ? '🔥' : '');
+  sv.classList.toggle('hot', stats.streak >= 5);
+  updateMeters(stats);
+}
+
+function updateMeters(stats) {
+  // 次のマイルストーンまで
+  const nextM = MILESTONES.find(m => m.n > stats.total) || MILESTONES[MILESTONES.length - 1];
+  const prevM = [...MILESTONES].reverse().find(m => m.n <= stats.total);
+  const prevN = prevM ? prevM.n : 0;
+  const pct = nextM.n === prevN ? 100 : Math.min(100, ((stats.total - prevN) / (nextM.n - prevN)) * 100);
+  document.getElementById('milestone-fill').style.width = pct + '%';
+  document.getElementById('milestone-meter-val').textContent = stats.total + '/' + nextM.n;
+
+  // デイリーゴール
+  const goal = parseInt(document.getElementById('daily-goal-input').value) || 50;
+  const dailyPct = Math.min(100, (stats.today / goal) * 100);
+  document.getElementById('daily-fill').style.width = dailyPct + '%';
+  document.getElementById('daily-current').textContent = stats.today;
+
+  // 承認率（セッション中カウント）
+  const approveCount = parseInt(localStorage.getItem('pinkc_approve_count') || '0');
+  const rejectCount  = parseInt(localStorage.getItem('pinkc_reject_count')  || '0');
+  const total = approveCount + rejectCount;
+  if (total > 0) {
+    const aPct = Math.round((approveCount / total) * 100);
+    document.getElementById('approve-fill').style.width = aPct + '%';
+    document.getElementById('reject-fill').style.width = (100 - aPct) + '%';
+    document.getElementById('approve-rate-val').textContent = aPct + '%';
+  }
+}
+
+function bumpValue(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('bump');
+  void el.offsetWidth;
+  el.classList.add('bump');
+  setTimeout(() => el.classList.remove('bump'), 300);
+}
+
+let milestoneTimer = null;
+function showMilestone(milestone) {
+  const popup = document.getElementById('milestone-popup');
+  document.getElementById('milestone-emoji').textContent = milestone.emoji;
+  document.getElementById('milestone-text').textContent = milestone.text;
+  document.getElementById('milestone-sub').textContent = milestone.sub;
+  popup.classList.add('show');
+  if (milestoneTimer) clearTimeout(milestoneTimer);
+  milestoneTimer = setTimeout(() => popup.classList.remove('show'), 1800);
+}
+
+function recordJudge(isJudge, newStatus) {
+  if (!isJudge) return;
+  const stats = loadGameStats();
+  stats.today++;
+  stats.total++;
+  stats.streak++;
+  saveGameStats(stats);
+  // 承認率カウント
+  if (newStatus === 'approved') {
+    localStorage.setItem('pinkc_approve_count', (parseInt(localStorage.getItem('pinkc_approve_count') || '0') + 1));
+  } else if (newStatus === 'rejected') {
+    localStorage.setItem('pinkc_reject_count', (parseInt(localStorage.getItem('pinkc_reject_count') || '0') + 1));
+  }
+  updateGameUI();
+  bumpValue('today-count');
+  bumpValue('total-count');
+  const hit = MILESTONES.find(m => m.n === stats.total);
+  if (hit) showMilestone(hit);
+}
+
+function resetStreak() {
+  const stats = loadGameStats();
+  stats.streak = 0;
+  saveGameStats(stats);
+  updateGameUI();
+}
 
 async function sbFetch(path, options = {}) {
   const controller = new AbortController();
@@ -333,8 +686,12 @@ async function loadProducts() {
   localStorage.setItem('sb-key', supabaseKey);
 
   document.getElementById('config-panel').style.display = 'none';
+  document.getElementById('style-filter').style.display = 'flex';
   document.getElementById('source-filter').style.display = 'flex';
+  document.getElementById('game-bar').classList.add('visible');
+  document.getElementById('meters').classList.add('visible');
   document.getElementById('loading').style.display = 'block';
+  updateGameUI();
 
   try {
     await showMode('pending');
@@ -371,8 +728,9 @@ async function showMode(mode) {
   document.getElementById('grid').innerHTML = '';
   document.getElementById('empty').style.display = 'none';
 
-  const srcFilter = currentSource !== 'all' ? `&source=eq.${currentSource}` : '';
-  const data = await sbFetch(`pink_products?status=eq.${mode}${srcFilter}&order=created_at.desc&limit=500&select=id,product_name,image_url,product_url,source`);
+  const srcFilter   = currentSource !== 'all' ? `&source=eq.${currentSource}` : '';
+  const styleFilter = currentStyle  !== 'all' ? `&style=eq.${currentStyle}`   : '';
+  const data = await sbFetch(`pink_products?status=eq.${mode}${srcFilter}${styleFilter}&order=created_at.desc&limit=500&select=id,product_name,image_url,product_url,source,style`);
   document.getElementById('loading').style.display = 'none';
 
   if (!Array.isArray(data) || data.length === 0) {
@@ -451,6 +809,9 @@ async function review(id, newStatus, btn) {
     }
   }
 
+  // ゲームカウント
+  recordJudge(newStatus !== 'pending', newStatus);
+
   // バックグラウンドでDB更新（UIをブロックしない）
   fetch(supabaseUrl + '/rest/v1/pink_products?id=eq.' + id, {
     method: 'PATCH',
@@ -466,20 +827,27 @@ async function review(id, newStatus, btn) {
 
 function setSource(source) {
   currentSource = source;
-  // ボタンのactive切り替え
-  document.querySelectorAll('.src-btn').forEach(btn => {
+  document.querySelectorAll('[data-source]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.source === source);
   });
-  // 現在のモードで再読み込み
+  showMode(currentMode);
+}
+
+function setStyle(style) {
+  currentStyle = style;
+  document.querySelectorAll('[data-style]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.style === style);
+  });
   showMode(currentMode);
 }
 
 async function getCount(status) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
-  const srcFilter = currentSource !== 'all' ? `&source=eq.${currentSource}` : '';
+  const srcFilter   = currentSource !== 'all' ? `&source=eq.${currentSource}` : '';
+  const styleFilter = currentStyle  !== 'all' ? `&style=eq.${currentStyle}`   : '';
   try {
-    const res = await fetch(`${supabaseUrl}/rest/v1/pink_products?status=eq.${status}${srcFilter}&select=id`, {
+    const res = await fetch(`${supabaseUrl}/rest/v1/pink_products?status=eq.${status}${srcFilter}${styleFilter}&select=id`, {
       signal: controller.signal,
       headers: {
         'apikey': supabaseKey,
@@ -510,17 +878,24 @@ async function updateStats() {
   document.getElementById('rejected-count').textContent = rejected;
 }
 
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('daily-goal-input').addEventListener('input', () => updateGameUI());
+});
+
 window.onload = () => {
   const url = localStorage.getItem('sb-url');
   const key = localStorage.getItem('sb-key');
   if (url) document.getElementById('sb-url').value = url;
   if (key) document.getElementById('sb-key').value = key;
   if (url && key) {
-    // 前回のキー情報があれば自動ロード
     supabaseUrl = url;
     supabaseKey = key;
     document.getElementById('config-panel').style.display = 'none';
+    document.getElementById('style-filter').style.display = 'flex';
     document.getElementById('source-filter').style.display = 'flex';
+    document.getElementById('game-bar').classList.add('visible');
+    document.getElementById('meters').classList.add('visible');
+    updateGameUI();
     showMode('pending').then(() => updateStats());
   }
 };

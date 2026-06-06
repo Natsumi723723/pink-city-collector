@@ -89,20 +89,22 @@ body::before {
 
 #filters {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 .filter-btn {
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: 12px;
   border: 1px solid #2a2a2a;
   background: transparent;
   color: #888;
-  font-size: 11px;
+  font-size: 10px;
   font-family: 'Share Tech Mono', monospace;
   cursor: pointer;
   transition: all 0.15s;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 .filter-btn.active {
   border-color: var(--hot);
@@ -110,6 +112,30 @@ body::before {
   background: rgba(255,0,110,0.08);
   text-shadow: 0 0 6px var(--hot);
 }
+/* スタイル別フィルター行 */
+#style-filters {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.style-btn {
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid #2a2a2a;
+  background: transparent;
+  color: #888;
+  font-size: 10px;
+  font-family: 'Share Tech Mono', monospace;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.style-btn[data-style="glitter"].active { border-color: #ff4db8; color: #ff4db8; background: rgba(255,77,184,0.08); }
+.style-btn[data-style="neon"].active    { border-color: #00ffcc; color: #00ffcc; background: rgba(0,255,200,0.08); }
+.style-btn[data-style="leopard"].active { border-color: #ffaa00; color: #ffaa00; background: rgba(255,170,0,0.08); }
+.style-btn[data-style="clear"].active   { border-color: #aaddff; color: #aaddff; background: rgba(170,220,255,0.08); }
+.style-btn[data-style="all"].active     { border-color: var(--hot); color: var(--hot); background: rgba(255,0,110,0.08); }
 
 #status {
   font-family: 'Share Tech Mono', monospace;
@@ -343,6 +369,13 @@ body::before {
   <div id="search-wrap">
     <input id="search" type="text" placeholder="商品を検索...">
   </div>
+  <div id="style-filters">
+    <button class="style-btn active" data-style="all">ALL</button>
+    <button class="style-btn" data-style="glitter">✨ GLITTER</button>
+    <button class="style-btn" data-style="neon">🌈 NEON</button>
+    <button class="style-btn" data-style="leopard">🐆 LEOPARD</button>
+    <button class="style-btn" data-style="clear">🫧 CLEAR</button>
+  </div>
   <div id="filters">
     <button class="filter-btn active" data-src="all">ALL</button>
     <button class="filter-btn" data-src="amazon">AMAZON</button>
@@ -368,6 +401,7 @@ const SHELF_SIZE = 30; // cards per shelf row
 
 let allProducts = [];
 let currentFilter = 'all';
+let currentStyle = 'all';
 let searchQuery = '';
 
 // カテゴリ定義（順番＝棚の並び順）
@@ -450,7 +484,7 @@ async function fetchAll() {
   const PAGE = 500;
   while (true) {
     const res = await fetch(
-      `${SB_URL}/rest/v1/pink_products?status=eq.approved&order=created_at.desc&select=id,product_name,image_url,product_url,source,price&limit=${PAGE}&offset=${from}`,
+      `${SB_URL}/rest/v1/pink_products?status=eq.approved&order=created_at.desc&select=id,product_name,image_url,product_url,source,price,style&limit=${PAGE}&offset=${from}`,
       { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }
     );
     const data = await res.json();
@@ -469,6 +503,9 @@ function setProgress(pct) {
 
 function getFiltered() {
   let items = allProducts;
+  if (currentStyle !== 'all') {
+    items = items.filter(p => (p.style || 'glitter') === currentStyle);
+  }
   if (currentFilter !== 'all') {
     items = items.filter(p => (p.source || '').toLowerCase() === currentFilter);
   }
@@ -559,7 +596,17 @@ document.getElementById('search').addEventListener('input', e => {
   refresh();
 });
 
-// Filters
+// Style filters
+document.querySelectorAll('.style-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentStyle = btn.dataset.style;
+    refresh();
+  });
+});
+
+// Source filters
 document.querySelectorAll('.filter-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));

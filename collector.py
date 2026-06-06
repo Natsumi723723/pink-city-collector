@@ -106,13 +106,17 @@ GLITTER_WORDS = [
 ]
 
 EXCLUDE_KEYWORDS = [
-    # 魚・水産・ペット・生き物系
+    # 魚・釣り・水産・ペット・生き物系
     "金魚", "熱帯魚", "錦鯉", "鯉", "めだか", "メダカ", "グッピー",
     "アロワナ", "ベタ", "プラティ", "ネオンテトラ", "コリドラス",
     "魚", "水槽", "アクアリウム", "aquarium", "fish",
     "えさ", "餌", "飼料", "フィッシュ",
     "サーモン", "マグロ", " タコ", "イカ釣", "エビ釣", "カニ釣",
     "めだか", "メダカ", "稚魚",
+    # 釣り用品
+    "ジグ", "ルアー", "lure", "釣り", "フィッシング", "fishing",
+    "タックル", "tackle", "ロッド", "リール", "仕掛け",
+    "メジャークラフト", "シマノ", "ダイワ", "バス釣",
     # 洋服・アパレル系（全ソース共通除外）
     "Tシャツ", "ティーシャツ", "t-shirt", "tshirt", "t shirt",
     "ワンピース", "ドレス", "dress", "スカート", "skirt",
@@ -139,13 +143,14 @@ EXCLUDE_KEYWORDS = [
     "リップライナー", "リップシャイン", "リップエッセンス", "リップペンシル", "リップセラム",
     "口紅", "ルージュ", "チーク", "アイシャドウ", "ファンデーション", "コンシーラー",
     "マスカラ", "アイライナー", "ハイライター", "ブラッシュ", "ブロンザー",
-    "ネイルポリッシュ", "マニキュア", "ジェルネイル", "カラージェル",
+    # ネイルはアート・チップ・デコ系はOK、塗るタイプのみ除外
+    "ネイルポリッシュ", "マニキュア", "nail polish", "nail gel",
+    "base coat", "top coat",
     "リップグロス", "ティント", "ルージュ", "リップクリーム",
     "下地", "化粧水", "美容液", "乳液", "クリーム", "洗顔", "日焼け止め",
     "lipstick", "lip gloss", "lip tint", "eyeshadow", "mascara", "blush",
     "foundation", "concealer", "highlighter", "bronzer", "eyeliner",
-    "nail polish", "nail gel", "color gel", "base coat", "top coat",
-    "skincare", "serum", "moisturizer", "sunscreen", "toner",
+    "color gel", "skincare", "serum", "moisturizer", "sunscreen", "toner",
     "hair color", "hair dye", "ヘアカラー", "白髪染め", "カラーシャンプー",
     "染料", "色素",
 ]
@@ -171,26 +176,66 @@ def is_excluded(product_name):
     return False
 
 
-def save_product(sb, product_name, image_url, product_url, source, keyword, require_image=False, price=None):
+PINK_WORDS = [
+    "ピンク", "pink", "ホットピンク", "hot pink", "ネオンピンク", "neon pink",
+    "ローズ", "rose", "マゼンタ", "magenta", "フューシャ", "fuchsia",
+    "桃", "蛍光ピンク", "ショッキングピンク", "バービーピンク", "barbie pink",
+    "オーロラピンク", "aurora pink",
+]
+
+NEON_WORDS = [
+    "ネオンサイン", "ネオンライト", "neon sign", "neon light",
+    "ledサイン", "led sign", "ledネオン", "led neon",
+]
+
+LEOPARD_WORDS = [
+    "レオパード", "ヒョウ柄", "豹柄", "ひょう柄", "leopard", "アニマル柄",
+    "チーター", "cheetah", "animal print",
+]
+
+CLEAR_WORDS = [
+    "クリアバッグ", "クリアポーチ", "クリアケース", "クリアトート",
+    "透明バッグ", "透明ポーチ", "透明ケース",
+    "clear bag", "clear pouch", "clear case", "clear tote",
+    "アクリルバッグ", "アクリルケース", "アクリルポーチ",
+    "pvcバッグ", "pvc bag", "ビニールバッグ",
+]
+
+def detect_style(product_name):
+    """商品名からスタイルを判定"""
+    name_lower = product_name.lower()
+    if any(w.lower() in name_lower for w in NEON_WORDS):
+        return 'neon'
+    if any(w.lower() in name_lower for w in LEOPARD_WORDS):
+        return 'leopard'
+    if any(w.lower() in name_lower for w in CLEAR_WORDS):
+        return 'clear'
+    return 'glitter'
+
+def save_product(sb, product_name, image_url, product_url, source, keyword, require_image=False, price=None, style=None):
     if is_excluded(product_name):
-        print(f"  — スキップ: {product_name[:40]}")
         return False
     name_lower = product_name.lower()
-    # ギラギラ系ワードが1つも含まれていなければスキップ
-    if not any(w.lower() in name_lower for w in GLITTER_WORDS):
-        return False
-    # ピンクワードが1つも含まれていなければスキップ（カラバリ全出し防止）
-    PINK_WORDS = [
-        "ピンク", "pink", "ホットピンク", "hot pink", "ネオンピンク", "neon pink",
-        "ローズ", "rose", "マゼンタ", "magenta", "フューシャ", "fuchsia",
-        "桃", "蛍光ピンク", "ショッキングピンク", "バービーピンク", "barbie pink",
-        "オーロラピンク", "aurora pink",
-    ]
+
+    # スタイル自動判定
+    detected_style = style or detect_style(product_name)
+
+    # ピンクワードチェック（全スタイル共通）
     if not any(w.lower() in name_lower for w in PINK_WORDS):
         return False
-    # AliExpressは画像なしをスキップ
+
+    # グリッター・ネオン・クリアはギラギラ語が必要、レオパードは不要
+    if detected_style not in ('leopard',):
+        if not any(w.lower() in name_lower for w in GLITTER_WORDS):
+            # ネオン・クリアはキーワード自体がギラギラ語になるので別途チェック
+            if detected_style == 'neon' and any(w.lower() in name_lower for w in NEON_WORDS):
+                pass  # OK
+            elif detected_style == 'clear' and any(w.lower() in name_lower for w in CLEAR_WORDS):
+                pass  # OK
+            else:
+                return False
+
     if require_image and (not image_url or len(image_url) < 10):
-        print(f"  — スキップ(画像なし): {product_name[:40]}")
         return False
     try:
         row = {
@@ -200,11 +245,12 @@ def save_product(sb, product_name, image_url, product_url, source, keyword, requ
             "source": source,
             "status": "pending",
             "pink_keywords": keyword,
+            "style": detected_style,
         }
         if price:
             row["price"] = price
         sb.table("pink_products").upsert(row, on_conflict="product_url").execute()
-        print(f"  ✓ {source}: {product_name[:40]}")
+        print(f"  ✓ {source}[{detected_style}]: {product_name[:40]}")
         return True
     except Exception as e:
         print(f"  ✗ 保存失敗: {e}")
@@ -396,9 +442,27 @@ def collect_amazon(sb):
                     if price and not price.startswith("¥"):
                         price = "¥" + price
 
-                product_url = f"https://www.amazon.co.jp/dp/{asin}"
+                # バリアント指定のhrefを優先（ピンク等の特定カラーが選択された状態のURL）
+                link_el = card.select_one("a.a-link-normal[href*='/dp/']")
+                if link_el and link_el.get("href"):
+                    href = link_el["href"]
+                    # 相対URLを絶対URLに
+                    if href.startswith("/"):
+                        href = "https://www.amazon.co.jp" + href
+                    # refパラメータは不要、dp/ASIN部分以降だけ残す
+                    import re as _re
+                    m = _re.search(r'(https://www\.amazon\.co\.jp/dp/[A-Z0-9]+(?:\?[^"]*)?)', href)
+                    product_url = m.group(1) if m else f"https://www.amazon.co.jp/dp/{asin}"
+                    # ref=... などのトラッキング部分を除去してth/pscだけ残す
+                    base = f"https://www.amazon.co.jp/dp/{asin}"
+                    params = []
+                    if "th=1" in href: params.append("th=1")
+                    if "psc=1" in href: params.append("psc=1")
+                    product_url = base + ("?" + "&".join(params) if params else "")
+                else:
+                    product_url = f"https://www.amazon.co.jp/dp/{asin}"
 
-                if save_product(sb, title, image_url, product_url, "amazon", keyword, price=price):
+                if save_product(sb, title, image_url, product_url, "amazon", keyword, require_image=True, price=price):
                     count += 1
 
             time.sleep(random.uniform(3, 5))
@@ -508,15 +572,22 @@ def collect_buyma(sb):
 
 # ── Yahoo!ショッピング（公式API） ──────────────────────────────────────
 YAHOO_KEYWORDS = [
-    # ギラギラ×ピンク
+    # ✨ グリッター×ピンク
     "ピンク グリッター", "ピンク スパンコール", "ピンク ラメ", "ピンク ラインストーン",
     "ピンク ホログラム", "オーロラ ピンク", "ピンク キラキラ",
     "ネオンピンク", "ホットピンク", "ショッキングピンク",
     "pink glitter", "pink rhinestone", "pink sequin", "holographic pink",
-    # ラグジュアリー×ピンク
     "ピンク バッグ ラメ", "ピンク 財布 キラキラ", "ピンク アクセサリー ストーン",
     "ピンク シューズ スパンコール", "ピンク ジュエリー クリスタル",
     "ピンク 財布 ラインストーン", "ピンク バッグ スパンコール",
+    # 🐆 レオパード×ピンク
+    "ピンク レオパード バッグ", "ピンク ヒョウ柄 バッグ", "ピンク 豹柄",
+    "ピンク レオパード 財布", "ピンク レオパード アクセサリー",
+    "pink leopard bag", "pink animal print",
+    # 🫧 クリア×ピンク
+    "ピンク クリアバッグ", "ピンク 透明バッグ", "ピンク アクリルバッグ",
+    "ピンク クリアポーチ", "ピンク PVCバッグ", "ピンク ビニールバッグ",
+    "pink clear bag", "pink transparent bag", "pink acrylic bag",
 ]
 
 def collect_yahoo(sb):
@@ -526,6 +597,8 @@ def collect_yahoo(sb):
         return 0
 
     count = 0
+    # 商品名 → {price, url, title, image, keyword} の最安値候補を一時保存
+    cheapest = {}
     for keyword in YAHOO_KEYWORDS:
         url = "https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch"
         params = {
@@ -545,25 +618,35 @@ def collect_yahoo(sb):
                 if not title:
                     continue
 
-                # 画像
+                # 商品名を正規化してキーに
+                name_key = re.sub(r'[\s　【】「」\[\]()（）]+', '', title).lower()
+
                 image = item.get("image", {})
                 image_url = image.get("medium", "") or image.get("small", "")
-
-                # URL
                 product_url = item.get("url", "") or item.get("externalUrl", "")
                 if not product_url:
                     continue
-
-                # 価格
                 price_val = item.get("price", None)
-                price = f"¥{int(price_val):,}" if price_val else None
 
-                if save_product(sb, title, image_url, product_url, "yahoo", keyword, price=price):
-                    count += 1
+                # 同名商品が既にある場合、より安い方を採用
+                if name_key in cheapest:
+                    existing_price = cheapest[name_key]["price_val"]
+                    if price_val and (existing_price is None or price_val < existing_price):
+                        cheapest[name_key] = {"title": title, "image_url": image_url,
+                                              "url": product_url, "price_val": price_val, "keyword": keyword}
+                else:
+                    cheapest[name_key] = {"title": title, "image_url": image_url,
+                                          "url": product_url, "price_val": price_val, "keyword": keyword}
 
             time.sleep(0.5)
         except Exception as e:
             print(f"  Yahoo エラー ({keyword}): {e}")
+
+    # 最安値候補をまとめてDB保存
+    for name_key, d in cheapest.items():
+        price = f"¥{int(d['price_val']):,}" if d["price_val"] else None
+        if save_product(sb, d["title"], d["image_url"], d["url"], "yahoo", d["keyword"], price=price):
+            count += 1
 
     return count
 
