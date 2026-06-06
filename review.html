@@ -47,6 +47,42 @@
   .stat-btn:hover { background: rgba(255,0,110,0.15); transform: scale(1.05); }
   .stat-btn.active { background: rgba(255,0,110,0.25); outline: 1px solid #ff006e; }
 
+  /* ── APPROVED COUNTS BAR ── */
+  #approved-counts {
+    display: flex;
+    background: #0d0d0d;
+    border-bottom: 2px solid #ff006e44;
+  }
+  .apc-chip {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 8px 8px;
+    cursor: pointer;
+    border-right: 1px solid #1a1a1a;
+    transition: background 0.15s;
+    gap: 2px;
+  }
+  .apc-chip:last-child { border-right: none; }
+  .apc-chip:hover { background: #1a1a1a; }
+  .apc-emoji { font-size: 16px; line-height: 1; }
+  .apc-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: #aaa;
+    text-transform: uppercase;
+    font-family: 'Share Tech Mono', monospace;
+  }
+  .apc-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 22px;
+    font-weight: bold;
+    color: #ff4db8;
+    text-shadow: 0 0 12px rgba(255,77,184,0.7), 0 0 24px rgba(255,0,110,0.4);
+    line-height: 1.2;
+  }
+
   /* ── GAME BAR ── */
   #game-bar {
     display: none;
@@ -67,7 +103,7 @@
   .game-stat-label {
     font-size: 9px;
     letter-spacing: 2px;
-    color: #666;
+    color: #aaa;
     text-transform: uppercase;
   }
   .game-stat-value {
@@ -99,7 +135,7 @@
     font-family: 'Share Tech Mono', monospace;
     font-size: 20px;
     font-weight: bold;
-    color: #555;
+    color: #ff4db8;
     transition: all 0.2s;
   }
   #streak-value.hot {
@@ -132,7 +168,7 @@
     font-family: 'Share Tech Mono', monospace;
     font-size: 9px;
     letter-spacing: 1.5px;
-    color: #555;
+    color: #bbb;
     width: 110px;
     flex-shrink: 0;
     text-transform: uppercase;
@@ -167,7 +203,7 @@
   .meter-value {
     font-family: 'Share Tech Mono', monospace;
     font-size: 10px;
-    color: #444;
+    color: #ccc;
     width: 60px;
     text-align: right;
     flex-shrink: 0;
@@ -178,8 +214,8 @@
     font-size: 10px;
     background: transparent;
     border: none;
-    border-bottom: 1px solid #333;
-    color: #666;
+    border-bottom: 1px solid #555;
+    color: #ccc;
     width: 30px;
     text-align: center;
     outline: none;
@@ -236,8 +272,8 @@
   }
   .src-btn {
     background: #1a1a1a;
-    border: 1px solid #2a2a2a;
-    color: #888;
+    border: 1px solid #444;
+    color: #ddd;
     font-size: 11px;
     font-weight: bold;
     letter-spacing: 1px;
@@ -494,7 +530,31 @@
   </div>
 </div>
 
-<div class="source-filter" id="style-filter" style="display:none">
+<!-- APPROVED COUNTS BAR -->
+<div id="approved-counts">
+  <div class="apc-chip" onclick="setStyle('glitter')">
+    <span class="apc-emoji">✨</span>
+    <div class="apc-label">GLITTER</div>
+    <div class="apc-num" id="apc-glitter">—</div>
+  </div>
+  <div class="apc-chip" onclick="setStyle('neon')">
+    <span class="apc-emoji">🌈</span>
+    <div class="apc-label">NEON</div>
+    <div class="apc-num" id="apc-neon">—</div>
+  </div>
+  <div class="apc-chip" onclick="setStyle('leopard')">
+    <span class="apc-emoji">🐆</span>
+    <div class="apc-label">LEOPARD</div>
+    <div class="apc-num" id="apc-leopard">—</div>
+  </div>
+  <div class="apc-chip" onclick="setStyle('clear')">
+    <span class="apc-emoji">🫧</span>
+    <div class="apc-label">CLEAR</div>
+    <div class="apc-num" id="apc-clear">—</div>
+  </div>
+</div>
+
+<div class="source-filter" id="style-filter" style="display:flex">
   <button class="src-btn active" data-style="all"     onclick="setStyle('all')">ALL</button>
   <button class="src-btn" data-style="glitter"  onclick="setStyle('glitter')">✨ GLITTER</button>
   <button class="src-btn" data-style="neon"     onclick="setStyle('neon')">🌈 NEON</button>
@@ -502,7 +562,7 @@
   <button class="src-btn" data-style="clear"    onclick="setStyle('clear')">🫧 CLEAR</button>
 </div>
 
-<div class="source-filter" id="source-filter" style="display:none">
+<div class="source-filter" id="source-filter" style="display:flex">
   <button class="src-btn active" data-source="all" onclick="setSource('all')">🌐 ALL</button>
   <button class="src-btn" data-source="amazon" onclick="setSource('amazon')">📦 Amazon</button>
   <button class="src-btn" data-source="aliexpress" onclick="setSource('aliexpress')">🛒 AliExpress</button>
@@ -867,6 +927,27 @@ async function getCount(status) {
   }
 }
 
+async function fetchApprovedStyleCounts() {
+  const styles = ['glitter','neon','leopard','clear'];
+  await Promise.all(styles.map(async (style) => {
+    try {
+      const res = await fetch(`${supabaseUrl}/rest/v1/pink_products?status=eq.approved&style=eq.${style}&select=id`, {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': 'Bearer ' + supabaseKey,
+          'Prefer': 'count=exact',
+          'Range-Unit': 'items',
+          'Range': '0-0',
+        }
+      });
+      const cr = res.headers.get('Content-Range');
+      const count = cr ? parseInt(cr.split('/')[1]) || 0 : 0;
+      const el = document.getElementById('apc-' + style);
+      if (el) el.textContent = count.toLocaleString();
+    } catch(e) {}
+  }));
+}
+
 async function updateStats() {
   const [approved, pending, rejected] = await Promise.all([
     getCount('approved'),
@@ -876,6 +957,7 @@ async function updateStats() {
   document.getElementById('approved-count').textContent = approved;
   document.getElementById('pending-count').textContent = pending;
   document.getElementById('rejected-count').textContent = rejected;
+  fetchApprovedStyleCounts();
 }
 
 document.addEventListener('DOMContentLoaded', () => {

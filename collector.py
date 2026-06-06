@@ -4,6 +4,7 @@ PINK CITY - 自動商品収集スクリプト
 """
 
 import os
+import re
 import time
 import json
 import random
@@ -143,9 +144,12 @@ EXCLUDE_KEYWORDS = [
     "リップライナー", "リップシャイン", "リップエッセンス", "リップペンシル", "リップセラム",
     "口紅", "ルージュ", "チーク", "アイシャドウ", "ファンデーション", "コンシーラー",
     "マスカラ", "アイライナー", "ハイライター", "ブラッシュ", "ブロンザー",
-    # ネイルはアート・チップ・デコ系はOK、塗るタイプのみ除外
-    "ネイルポリッシュ", "マニキュア", "nail polish", "nail gel",
-    "base coat", "top coat",
+    # ネイル：塗るタイプ・施術系を除外（アート・チップ・デコ・パーツはOK）
+    "ネイルポリッシュ", "マニキュア", "nail polish",
+    "ジェルネイル", "ジェルカラー", "カラージェル", "gel nail", "nail gel", "color gel",
+    "ネイルカラー", "nail color", "nail lacquer",
+    "ベースコート", "トップコート", "base coat", "top coat",
+    "ネイルオイル", "ネイルケア", "甘皮", "キューティクル",
     "リップグロス", "ティント", "ルージュ", "リップクリーム",
     "下地", "化粧水", "美容液", "乳液", "クリーム", "洗顔", "日焼け止め",
     "lipstick", "lip gloss", "lip tint", "eyeshadow", "mascara", "blush",
@@ -162,7 +166,6 @@ EXCLUDE_PATTERNS = [
     r'\bep\b', r'\blp\b',
 ]
 
-import re
 _compiled_patterns = [re.compile(p, re.IGNORECASE) for p in EXCLUDE_PATTERNS]
 
 def is_excluded(product_name):
@@ -590,6 +593,33 @@ YAHOO_KEYWORDS = [
     "pink clear bag", "pink transparent bag", "pink acrylic bag",
 ]
 
+# iPhone以外のスマホ機種名パターン（これが含まれていたら除外）
+NON_IPHONE_MODELS = re.compile(
+    r'AQUOS|XPERIA|Xperia|Galaxy|Redmi|OPPO|HUAWEI|Pixel|arrows|ZenFone|Zenfone|nubia|BASIO|'
+    r'らくらく|TORQUE|Libero|Android One|S24|S23|S22|S21|A54|A53|A52|Find X|Reno',
+    re.IGNORECASE
+)
+
+# iPhone番号抽出（iPhone 17, 16 Pro Max など → 17.0 などの数値）
+def extract_iphone_num(title):
+    """タイトルからiPhone番号を抽出。無ければNone"""
+    m = re.search(r'iPhone\s*(\d+)', title, re.IGNORECASE)
+    return int(m.group(1)) if m else None
+
+def make_phone_case_key(title):
+    """スマホケース商品のデザインキー（機種名を除去した文字列）"""
+    # iPhoneモデル部分を除去
+    key = re.sub(
+        r'iPhone\s*\d+\s*(?:Pro\s*Max|Pro\s*Plus|Pro|Plus|Max|mini|SE)?\s*(?:シリーズ)?',
+        '', title, flags=re.IGNORECASE
+    )
+    # その他機種表記を除去
+    key = re.sub(r'(?:for\s+)?(?:スマホ|スマートフォン)(?:ケース)?', '', key)
+    # 括弧・記号・空白を除去して小文字化
+    key = re.sub(r'[\s　【】「」\[\]()（）・]+', '', key).lower()
+    return key
+
+
 def collect_yahoo(sb):
     YAHOO_APP_ID = os.environ.get("YAHOO_APP_ID", "")
     if not YAHOO_APP_ID:
@@ -618,9 +648,6 @@ def collect_yahoo(sb):
                 if not title:
                     continue
 
-                # 商品名を正規化してキーに
-                name_key = re.sub(r'[\s　【】「」\[\]()（）]+', '', title).lower()
-
                 image = item.get("image", {})
                 image_url = image.get("medium", "") or image.get("small", "")
                 product_url = item.get("url", "") or item.get("externalUrl", "")
@@ -628,15 +655,39 @@ def collect_yahoo(sb):
                     continue
                 price_val = item.get("price", None)
 
-                # 同名商品が既にある場合、より安い方を採用
-                if name_key in cheapest:
-                    existing_price = cheapest[name_key]["price_val"]
-                    if price_val and (existing_price is None or price_val < existing_price):
+                # スマホケース判定
+                is_phone_case = bool(re.search(r'スマホケース|スマートフォンケース|iPhoneケース|phone case', title, re.IGNORECASE))
+
+                if is_phone_case:
+                    # iPhone以外の機種 → スキップ
+                    if NON_IPHONE_MODELS.search(title):
+                        continue
+                    # iPhoneケースはデザインキーで重複チェック（機種名除去）
+                    name_key = 'iphone_case:' + make_phone_case_key(title)
+                    iphone_num = extract_iphone_num(title)
+                    if name_key in cheapest:
+                        # より新しいiPhoneモデルを優先
+                        existing_num = cheapest[name_key].get("iphone_num")
+                        if iphone_num and (existing_num is None or iphone_num > existing_num):
+                            cheapest[name_key] = {"title": title, "image_url": image_url,
+                                                  "url": product_url, "price_val": price_val,
+                                                  "keyword": keyword, "iphone_num": iphone_num}
+                        continue
+                    else:
+                        cheapest[name_key] = {"title": title, "image_url": image_url,
+                                              "url": product_url, "price_val": price_val,
+                                              "keyword": keyword, "iphone_num": iphone_num}
+                else:
+                    # 通常商品：商品名全体で最安値チェック
+                    name_key = re.sub(r'[\s　【】「」\[\]()（）]+', '', title).lower()
+                    if name_key in cheapest:
+                        existing_price = cheapest[name_key]["price_val"]
+                        if price_val and (existing_price is None or price_val < existing_price):
+                            cheapest[name_key] = {"title": title, "image_url": image_url,
+                                                  "url": product_url, "price_val": price_val, "keyword": keyword}
+                    else:
                         cheapest[name_key] = {"title": title, "image_url": image_url,
                                               "url": product_url, "price_val": price_val, "keyword": keyword}
-                else:
-                    cheapest[name_key] = {"title": title, "image_url": image_url,
-                                          "url": product_url, "price_val": price_val, "keyword": keyword}
 
             time.sleep(0.5)
         except Exception as e:
