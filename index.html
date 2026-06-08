@@ -514,6 +514,21 @@ body::before {
 /* ══════════════════════════════════════════════
    SKIN SWITCHER UI
 ══════════════════════════════════════════════ */
+#admin-btn {
+  font-size: 13px;
+  text-decoration: none;
+  color: #888;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all .2s;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 1px;
+}
+#admin-btn:hover { color: var(--neon); border-color: var(--neon); }
+
 #skin-btn {
   flex-shrink: 0;
   width: 32px; height: 32px;
@@ -1156,7 +1171,6 @@ const CATEGORIES = [
                'hair band', 'scrunchie', 'barrette', 'headband'],
   },
   {
-  {
     id: 'phone',
     label: '💻  GADGETS',
     emoji: '💻',
@@ -1187,8 +1201,10 @@ const CATEGORIES = [
     label: '👠  FASHION & SHOES',
     emoji: '👠',
     keywords: ['シューズ', '靴', 'ヒール', 'パンプス', 'スニーカー', 'サンダル',
-               'ブーツ', 'ミュール', 'ローファー', 'フラット', '草履',
+               'ブーツ', 'ミュール', 'ローファー', 'フラット', '草履', 'melissa', 'メリッサ',
+               'フラットサンダル', 'ウェッジ', 'バレエシューズ', 'スリッポン',
                'shoe', 'heel', 'pump', 'sneaker', 'sandal', 'boot', 'mule',
+               'loafer', 'ballet flat', 'wedge', 'slip-on', 'campana', 'mini melissa',
                '帽子', 'ハット', 'キャップ', 'ベレー帽', 'サングラス', 'メガネ',
                'スカーフ', 'ストール', 'マフラー', 'ベルト', 'グローブ', '手袋',
                'サッシュ', 'ヘアターバン', 'バンダナ', 'ファッション小物',
@@ -1230,6 +1246,8 @@ const CATEGORIES = [
 ];
 
 function categorize(product) {
+  // Manual override via DB category column takes priority
+  if (product.category) return product.category;
   const name = (product.product_name || '').toLowerCase();
   for (const cat of CATEGORIES) {
     if (cat.id === 'other') continue;
@@ -1246,7 +1264,7 @@ async function fetchAll() {
   const PAGE = 500;
   while (true) {
     const res = await fetch(
-      `${SB_URL}/rest/v1/pink_products?status=eq.approved&order=created_at.desc&select=id,product_name,image_url,product_url,source,price,style&limit=${PAGE}&offset=${from}`,
+      `${SB_URL}/rest/v1/pink_products?status=eq.approved&order=created_at.desc&select=id,product_name,image_url,product_url,source,price,style,category&limit=${PAGE}&offset=${from}`,
       { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }
     );
     const data = await res.json();

@@ -16,7 +16,9 @@ from urllib.parse import quote, urljoin
 # ── 設定 ──────────────────────────────────────────────────────────────
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
-ETSY_API_KEY = os.environ.get("ETSY_API_KEY", "")
+ETSY_API_KEY  = os.environ.get("ETSY_API_KEY", "")
+EBAY_APP_ID   = os.environ.get("EBAY_APP_ID", "")
+EBAY_CERT_ID  = os.environ.get("EBAY_CERT_ID", "")
 
 # ギラギラ・ネオン・濃いピンク系キーワード
 PINK_KEYWORDS_EN = [
@@ -77,6 +79,11 @@ PINK_KEYWORDS_ALI = [
     # コスメ
     "hot pink lipstick", "neon pink lip gloss", "pink glitter eyeshadow",
     "pink shimmer highlighter", "fuchsia blush", "pink holographic makeup",
+    # 👠 シューズ・サンダル・ブーツ
+    "pink glitter heels", "pink rhinestone sandals", "pink sequin shoes",
+    "hot pink platform boots", "neon pink heels", "pink bling sandals",
+    "pink sparkle pumps", "pink holographic shoes", "pink glitter sneakers",
+    "pink jelly shoes", "pink clear heels", "pink wedge sandals glitter",
 ]
 
 HEADERS = {
@@ -197,11 +204,26 @@ LEOPARD_WORDS = [
 ]
 
 CLEAR_WORDS = [
-    "クリアバッグ", "クリアポーチ", "クリアケース", "クリアトート",
-    "透明バッグ", "透明ポーチ", "透明ケース",
-    "clear bag", "clear pouch", "clear case", "clear tote",
+    # バッグ・ポーチ系
+    "クリアバッグ", "クリアポーチ", "クリアトート", "クリアショルダー",
+    "透明バッグ", "透明ポーチ", "透明トート", "透明ショルダー",
+    "clear bag", "clear pouch", "clear tote", "clear shoulder",
+    "pvcバッグ", "pvc bag", "ビニールバッグ", "ビニールポーチ",
+    # ケース・カバー系
+    "クリアケース", "透明ケース", "クリアカバー", "透明カバー",
+    "clear case", "clear cover", "transparent case",
+    # アクリル系
     "アクリルバッグ", "アクリルケース", "アクリルポーチ",
-    "pvcバッグ", "pvc bag", "ビニールバッグ",
+    "アクリルキーホルダー", "アクリルチャーム", "アクリルスタンド",
+    "acrylic bag", "acrylic case", "acrylic charm", "acrylic keychain",
+    # PVC・ビニール全般
+    "pvcポーチ", "pvcケース", "pvc pouch", "pvcトート",
+    "ビニールケース", "ビニールトート",
+    # クリア単品（名詞とセットじゃなくてもOK）
+    "クリア素材", "透明素材", "クリアPVC", "透明PVC",
+    # ジェリー・ゼリー系
+    "ジェリーバッグ", "ジェリーポーチ", "ゼリーバッグ",
+    "jelly bag", "jelly purse",
 ]
 
 def detect_style(product_name):
@@ -258,6 +280,105 @@ def save_product(sb, product_name, image_url, product_url, source, keyword, requ
     except Exception as e:
         print(f"  ✗ 保存失敗: {e}")
         return False
+
+
+# ── eBay（Browse API） ────────────────────────────────────────────────
+_ebay_token = None
+_ebay_token_expires = 0
+
+def get_ebay_token():
+    global _ebay_token, _ebay_token_expires
+    if _ebay_token and time.time() < _ebay_token_expires - 60:
+        return _ebay_token
+    if not EBAY_APP_ID or not EBAY_CERT_ID:
+        return None
+    # Sandboxかどうか判定
+    is_sandbox = 'SBX' in EBAY_APP_ID
+    url = "https://api.sandbox.ebay.com/identity/v1/oauth2/token" if is_sandbox else "https://api.ebay.com/identity/v1/oauth2/token"
+    resp = requests.post(url,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={"grant_type": "client_credentials", "scope": "https://api.ebay.com/oauth/api_scope"},
+        auth=(EBAY_APP_ID, EBAY_CERT_ID),
+        timeout=15
+    )
+    if resp.status_code != 200:
+        print(f"  eBay トークン取得失敗: {resp.status_code} {resp.text[:200]}")
+        return None
+    data = resp.json()
+    _ebay_token = data.get("access_token")
+    _ebay_token_expires = time.time() + data.get("expires_in", 7200)
+    return _ebay_token
+
+def collect_ebay(sb):
+    if not EBAY_APP_ID or not EBAY_CERT_ID:
+        print("⚠️  EBAY_APP_ID / EBAY_CERT_ID がないためスキップ")
+        return 0
+
+    token = get_ebay_token()
+    if not token:
+        print("⚠️  eBay トークン取得失敗、スキップ")
+        return 0
+
+    is_sandbox = 'SBX' in EBAY_APP_ID
+    base_url = "https://api.sandbox.ebay.com/buy/browse/v1/item_summary/search" if is_sandbox else "https://api.ebay.com/buy/browse/v1/item_summary/search"
+
+    # eBay向け検索キーワード（英語）
+    ebay_keywords = [
+        "pink glitter bag", "pink rhinestone bag", "pink holographic bag",
+        "hot pink sequin bag", "neon pink handbag", "pink bling purse",
+        "pink glitter jewelry", "pink rhinestone necklace", "pink crystal earrings",
+        "pink holographic wallet", "pink sequin clutch", "pink sparkle purse",
+        "pink glitter phone case", "pink rhinestone phone case",
+        "pink leopard bag", "pink leopard purse", "pink animal print bag",
+        "pink clear bag", "pink pvc bag", "pink jelly bag",
+        "pink neon sign", "pink led sign", "hot pink accessories",
+        "pink glitter hair clip", "pink rhinestone headband",
+        "pink sequin shoes", "pink glitter heels", "pink rhinestone sandals",
+        "pink holographic backpack", "pink metallic bag",
+    ]
+
+    count = 0
+    for keyword in ebay_keywords:
+        try:
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "X-EBAY-C-MARKETPLACE-ID": "EBAY_US",
+                "Content-Type": "application/json",
+            }
+            params = {
+                "q": keyword,
+                "limit": 50,
+                "filter": "conditions:{NEW}",
+            }
+            resp = requests.get(base_url, headers=headers, params=params, timeout=15)
+            if resp.status_code == 401:
+                # トークン期限切れ、再取得
+                _ebay_token = None
+                token = get_ebay_token()
+                if not token:
+                    break
+                headers["Authorization"] = f"Bearer {token}"
+                resp = requests.get(base_url, headers=headers, params=params, timeout=15)
+            if resp.status_code != 200:
+                print(f"  eBay エラー ({keyword}): {resp.status_code}")
+                continue
+            items = resp.json().get("itemSummaries", [])
+            for item in items:
+                title = item.get("title", "")
+                image_url = (item.get("image") or {}).get("imageUrl", "")
+                item_url = item.get("itemWebUrl", "")
+                price_val = (item.get("price") or {}).get("value", "")
+                price_cur = (item.get("price") or {}).get("currency", "USD")
+                price = f"${price_val}" if price_cur == "USD" else f"{price_val} {price_cur}"
+                if not item_url:
+                    continue
+                if save_product(sb, title, image_url, item_url, "ebay", keyword, require_image=True, price=price):
+                    count += 1
+                    print(f"  ✓ ebay: {title[:50]}")
+            time.sleep(0.3)
+        except Exception as e:
+            print(f"  eBay エラー ({keyword}): {e}")
+    return count
 
 
 # ── Etsy（公式API） ────────────────────────────────────────────────────
@@ -413,6 +534,12 @@ AMAZON_KEYWORDS = [
     # シール・ステーショナリー系
     "ピンク シール帳", "ピンク バインダー", "ピンク ステーショナリー",
     "pink sticker book", "pink binder glitter",
+    # 👠 シューズ・サンダル・ブーツ系
+    "ピンク サンダル キラキラ", "ピンク ヒール グリッター", "ピンク パンプス ラインストーン",
+    "ピンク ブーツ スパンコール", "ピンク スニーカー ラメ", "ピンク シューズ ホログラム",
+    "pink glitter heels", "pink rhinestone sandals", "pink sequin boots",
+    "pink glitter pumps", "pink sparkle shoes", "pink bling heels",
+    "hot pink heels rhinestone", "neon pink sandals glitter",
 ]
 
 def collect_amazon(sb):
@@ -446,18 +573,17 @@ def collect_amazon(sb):
                         price = "¥" + price
 
                 # バリアント指定のhrefを優先（ピンク等の特定カラーが選択された状態のURL）
+                import re as _re
                 link_el = card.select_one("a.a-link-normal[href*='/dp/']")
                 if link_el and link_el.get("href"):
                     href = link_el["href"]
-                    # 相対URLを絶対URLに
                     if href.startswith("/"):
                         href = "https://www.amazon.co.jp" + href
-                    # refパラメータは不要、dp/ASIN部分以降だけ残す
-                    import re as _re
-                    m = _re.search(r'(https://www\.amazon\.co\.jp/dp/[A-Z0-9]+(?:\?[^"]*)?)', href)
-                    product_url = m.group(1) if m else f"https://www.amazon.co.jp/dp/{asin}"
-                    # ref=... などのトラッキング部分を除去してth/pscだけ残す
-                    base = f"https://www.amazon.co.jp/dp/{asin}"
+                    # リンク内のASINを取得（親ASINではなくバリアントASINを使う）
+                    m = _re.search(r'/dp/([A-Z0-9]{10})', href)
+                    variant_asin = m.group(1) if m else asin
+                    base = f"https://www.amazon.co.jp/dp/{variant_asin}"
+                    # th=1, psc=1 などバリアント選択パラメータを保持
                     params = []
                     if "th=1" in href: params.append("th=1")
                     if "psc=1" in href: params.append("psc=1")
@@ -590,7 +716,16 @@ YAHOO_KEYWORDS = [
     # 🫧 クリア×ピンク
     "ピンク クリアバッグ", "ピンク 透明バッグ", "ピンク アクリルバッグ",
     "ピンク クリアポーチ", "ピンク PVCバッグ", "ピンク ビニールバッグ",
+    "ピンク ジェリーバッグ", "ピンク ビニールポーチ", "ピンク アクリルキーホルダー",
+    "ピンク クリアケース", "ピンク 透明ポーチ", "ピンク アクリルチャーム",
+    "ピンク クリアショルダー", "ピンク PVCポーチ", "ピンク アクリルスタンド",
     "pink clear bag", "pink transparent bag", "pink acrylic bag",
+    "pink jelly bag", "pink clear pouch", "pink acrylic charm",
+    "pink clear case", "pink pvc bag", "pink vinyl bag",
+    # 👠 シューズ・サンダル・ブーツ系
+    "ピンク サンダル キラキラ", "ピンク ヒール ラインストーン", "ピンク パンプス スパンコール",
+    "ピンク ブーツ ラメ", "ピンク スニーカー キラキラ", "ホットピンク サンダル",
+    "ネオンピンク ヒール", "ピンク ウェッジ キラキラ", "ピンク メリッサ",
 ]
 
 # iPhone以外のスマホ機種名パターン（これが含まれていたら除外）
@@ -709,6 +844,9 @@ def main():
 
     sb = get_supabase()
     total = 0
+
+    print("\n📦 eBay 収集中...")
+    total += collect_ebay(sb)
 
     print("\n📦 Etsy 収集中...")
     total += collect_etsy(sb)

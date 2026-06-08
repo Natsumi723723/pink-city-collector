@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PINK CITY — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --hot: #ff006e;
+  --neon: #ff4db8;
+  --bg: #050505;
+  --card-bg: #111;
+  --border: #2a2a2a;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { background: var(--bg); color: #fff; font-family: 'Noto Sans JP', sans-serif; min-height: 100%; }
+
+/* HEADER */
+#header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: #090909;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px; height: 56px;
+}
+#logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px; letter-spacing: 4px;
+  color: var(--hot);
+  text-shadow: 0 0 10px var(--hot);
+  white-space: nowrap;
+}
+#logo span { color: #888; font-size: 14px; letter-spacing: 2px; }
+
+#search-wrap { flex: 1; max-width: 360px; }
+#search-input {
+  width: 100%;
+  background: #181818; border: 1px solid #333; border-radius: 4px;
+  color: #fff; padding: 6px 12px; font-size: 13px;
+  outline: none;
+}
+#search-input:focus { border-color: var(--neon); }
+
+#filter-wrap { display: flex; gap: 8px; }
+.filter-btn {
+  background: #1a1a1a; border: 1px solid #333;
+  color: #aaa; padding: 5px 12px; border-radius: 4px;
+  cursor: pointer; font-size: 12px; white-space: nowrap;
+  font-family: 'Share Tech Mono', monospace;
+  transition: all .15s;
+}
+.filter-btn:hover, .filter-btn.active {
+  border-color: var(--neon); color: var(--neon);
+  box-shadow: 0 0 8px rgba(255,77,184,.3);
+}
+
+#status-bar {
+  margin-left: auto; font-family: 'Share Tech Mono', monospace;
+  font-size: 12px; color: #666; white-space: nowrap;
+}
+
+/* MAIN */
+#main {
+  padding-top: 72px;
+  max-width: 1400px; margin: 0 auto;
+  padding-left: 16px; padding-right: 16px;
+}
+
+/* GRID */
+#grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 16px 0 40px;
+}
+
+/* CARD */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: border-color .15s;
+}
+.card:hover { border-color: #444; }
+.card.dirty { border-color: var(--neon); box-shadow: 0 0 10px rgba(255,77,184,.25); }
+
+.card-img-wrap {
+  width: 100%; aspect-ratio: 1;
+  background: #1a1a1a; overflow: hidden;
+  position: relative;
+}
+.card-img-wrap img {
+  width: 100%; height: 100%; object-fit: cover;
+  display: block;
+}
+.card-img-wrap .no-img {
+  width: 100%; height: 100%;
+  background: linear-gradient(135deg, #3d0027, #1a0013);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+}
+
+.card-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+
+.card-name {
+  font-size: 11px; color: #ccc; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-meta { display: flex; gap: 6px; align-items: center; }
+.badge {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; padding: 2px 6px; border-radius: 3px;
+  color: #fff; white-space: nowrap;
+}
+.badge-source { background: #1e1e1e; color: #888; border: 1px solid #333; }
+.badge-style-glitter { background: #2a1540; color: #d08aff; }
+.badge-style-neon    { background: #002211; color: #00ff88; }
+.badge-style-leopard { background: #2a1500; color: #ffaa00; }
+.badge-style-clear   { background: #001a2a; color: #44ccff; }
+
+.card-price { font-size: 12px; color: var(--neon); font-family: 'Share Tech Mono', monospace; }
+
+/* Category select */
+.cat-select {
+  width: 100%; background: #1a1a1a; border: 1px solid #333;
+  color: #fff; padding: 5px 8px; border-radius: 4px;
+  font-size: 12px; cursor: pointer; outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  background-size: 10px;
+  padding-right: 24px;
+}
+.cat-select:focus { border-color: var(--neon); }
+.cat-select.changed { border-color: var(--neon); background-color: #1a0a16; }
+
+.save-btn {
+  width: 100%; padding: 6px;
+  background: var(--hot); border: none; border-radius: 4px;
+  color: #fff; font-size: 12px; font-weight: bold; cursor: pointer;
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 1px;
+  transition: background .15s;
+  display: none;
+}
+.save-btn:hover { background: var(--neon); }
+.save-btn.visible { display: block; }
+.save-btn.saving { background: #444; cursor: default; }
+.save-btn.saved { background: #006633; }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: #111; border: 1px solid var(--neon);
+  color: var(--neon); padding: 10px 18px; border-radius: 6px;
+  font-family: 'Share Tech Mono', monospace; font-size: 13px;
+  box-shadow: 0 0 16px rgba(255,77,184,.3);
+  opacity: 0; transform: translateY(12px);
+  transition: all .25s; pointer-events: none;
+  z-index: 9999;
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+
+/* LOADER */
+#loader {
+  text-align: center; padding: 60px;
+  font-family: 'Share Tech Mono', monospace; color: var(--neon);
+  font-size: 14px; letter-spacing: 3px;
+}
+#loader::after {
+  content: ''; display: inline-block; width: 8px; height: 8px;
+  background: var(--neon); border-radius: 50%; margin-left: 8px;
+  animation: blink .8s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* JUMP TO PRODUCT */
+.card-link {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; color: #555; text-decoration: none;
+  display: block; text-align: right;
+  padding: 0 0 4px;
+}
+.card-link:hover { color: var(--neon); }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="logo">PINK CITY <span>ADMIN</span></div>
+  <a href="review.html" style="color:#888;text-decoration:none;font-family:'Share Tech Mono',monospace;font-size:12px;border:1px solid #333;padding:4px 10px;border-radius:4px;white-space:nowrap;flex-shrink:0;transition:all .2s;" onmouseover="this.style.color='#ff4db8';this.style.borderColor='#ff4db8'" onmouseout="this.style.color='#888';this.style.borderColor='#333'">💗 REVIEW</a>
+  <div id="search-wrap">
+    <input id="search-input" type="text" placeholder="商品名で検索…" autocomplete="off">
+  </div>
+  <div id="filter-wrap">
+    <button class="filter-btn active" data-cat="">ALL</button>
+    <button class="filter-btn" data-cat="other">OTHER のみ</button>
+    <button class="filter-btn" data-cat="bag">BAG</button>
+    <button class="filter-btn" data-cat="jewelry">JEWELRY</button>
+    <button class="filter-btn" data-cat="hair">HAIR</button>
+    <button class="filter-btn" data-cat="phone">GADGETS</button>
+    <button class="filter-btn" data-cat="neon">NEON</button>
+    <button class="filter-btn" data-cat="fashion">FASHION</button>
+    <button class="filter-btn" data-cat="deco">DECO</button>
+    <button class="filter-btn" data-cat="car">CAR</button>
+    <button class="filter-btn" data-cat="stationery">STATIONERY</button>
+  </div>
+  <div id="status-bar">—</div>
+</div>
+
+<div id="main">
+  <div id="loader">LOADING</div>
+  <div id="grid" style="display:none"></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SB_URL = 'https://gjcbtolotqywzdggckto.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqY2J0b2xvdHF5d3pkZ2dja3RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzU4MzIsImV4cCI6MjA5NjA1MTgzMn0.dnMQl7cB5H7MGz0Nuh8PibQuYa1iYYmauJEhrlfyDBc';
+const HEADERS = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY };
+
+const CATEGORIES = [
+  { id: 'bag',       label: '👜 BAGS & POUCHES' },
+  { id: 'jewelry',   label: '💍 JEWELRY' },
+  { id: 'hair',      label: '🎀 HAIR ACCESSORIES' },
+  { id: 'phone',     label: '💻 GADGETS' },
+  { id: 'neon',      label: '🪩 NEON SIGNS' },
+  { id: 'stationery',label: '📓 STATIONERY' },
+  { id: 'fashion',   label: '👠 FASHION & SHOES' },
+  { id: 'deco',      label: '🎀 DECO & CRAFT' },
+  { id: 'car',       label: '🚗 CAR ACCESSORIES' },
+  { id: 'other',     label: '✨ OTHER' },
+];
+
+// Same keyword matching as gallery.html
+const CAT_KEYWORDS = {
+  bag:        ['バッグ','ポーチ','ハンドバッグ','ショルダーバッグ','トートバッグ','クラッチ','リュック','財布','ウォレット','巾着','bag','pouch','handbag','shoulder','tote','clutch','backpack','wallet','purse'],
+  jewelry:    ['ネックレス','リング','指輪','ピアス','イヤリング','ブレスレット','バングル','チョーカー','アンクレット','ブローチ','necklace','ring','earring','bracelet','bangle','choker','brooch'],
+  hair:       ['ヘアクリップ','ヘアピン','ヘアバンド','ヘアゴム','シュシュ','バレッタ','カチューシャ','ヘアアクセ','hair clip','hair pin','hair band','scrunchie','barrette','headband'],
+  phone:      ['スマホケース','スマホカバー','iPhoneケース','スマートフォンケース','phone case','iphone case','phone cover','マウス','キーボード','イヤホン','ヘッドホン','ワイヤレス','USBハブ','モバイルバッテリー','ケーブル','スマホスタンド','PCケース','ラップトップ','タブレット','AirPods','mouse','keyboard','earphone','headphone','earbuds','laptop','tablet','charger','gadget'],
+  neon:       ['ネオンサイン','ネオンライト','LEDサイン','LED ライト','LED ネオン','neon sign','neon light','led sign','led light'],
+  stationery: ['ノート','手帳','メモ帳','スケジュール帳','ダイアリー','notebook','diary','planner','journal'],
+  fashion:    ['シューズ','靴','ヒール','パンプス','スニーカー','サンダル','ブーツ','ミュール','ローファー','フラット','草履','melissa','メリッサ','フラットサンダル','ウェッジ','バレエシューズ','スリッポン','shoe','heel','pump','sneaker','sandal','boot','mule','loafer','ballet flat','wedge','slip-on','campana','mini melissa','帽子','ハット','キャップ','ベレー帽','サングラス','メガネ','スカーフ','ストール','マフラー','ベルト','グローブ','手袋','サッシュ','ヘアターバン','バンダナ','ファッション小物','hat','cap','beanie','beret','sunglasses','scarf','belt','glove','bandana','visor'],
+  deco:       ['ラインストーン','デコ','デコパーツ','デコシール','デコテープ','グリッターテープ','ラメテープ','キラキラテープ','マスキングテープ','ラメパウダー','グリッターパウダー','ラメフレーク','ホログラムテープ','スパンコールテープ','デコレーション','ネイルパーツ','ネイルチップ','ネイルシール','ネイルアート','ネイルデコ','ジェルネイルアート','ビジュー','スタッズ','チャームパーツ','アクリルパーツ','rhinestone','glitter tape','glitter powder','deco parts','nail art','nail sticker','nail charm','sequin tape','holographic tape','craft glitter','loose glitter'],
+  car:        ['カーアクセサリー','カー用品','ハンドルカバー','ステアリング','シートカバー','カーシート','ルームミラー','カーマット','エアフレッシュナー','カーチャーム','ナンバーフレーム','car accessory','car cover','steering wheel','seat cover','car mat','car charm','air freshener','car mirror','スマホホルダー 車','ドライブ','チャームキー','キーカバー','car','auto'],
+};
+
+function autoCategory(name) {
+  const n = name.toLowerCase();
+  for (const [id, kws] of Object.entries(CAT_KEYWORDS)) {
+    if (kws.some(kw => n.includes(kw.toLowerCase()))) return id;
+  }
+  return 'other';
+}
+
+function resolveCategory(p) {
+  return p.category || autoCategory(p.product_name || '');
+}
+
+// ─── State ───
+let allProducts = [];
+let filtered = [];
+let activeCatFilter = '';
+let searchQuery = '';
+
+// ─── Fetch ───
+async function fetchAll() {
+  let all = [];
+  let from = 0;
+  const PAGE = 500;
+  while (true) {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/pink_products?status=eq.approved&order=created_at.desc&select=id,product_name,image_url,product_url,source,price,style,category&limit=${PAGE}&offset=${from}`,
+      { headers: { ...HEADERS, Prefer: 'count=exact', Range: `${from}-${from+PAGE-1}` } }
+    );
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) break;
+    all = all.concat(data);
+    from += PAGE;
+    if (data.length < PAGE) break;
+  }
+  return all;
+}
+
+// ─── Render ───
+function applyFilter() {
+  const q = searchQuery.toLowerCase();
+  filtered = allProducts.filter(p => {
+    const catMatch = !activeCatFilter || resolveCategory(p) === activeCatFilter;
+    const nameMatch = !q || (p.product_name || '').toLowerCase().includes(q);
+    return catMatch && nameMatch;
+  });
+  document.getElementById('status-bar').textContent = `${filtered.length.toLocaleString()} / ${allProducts.length.toLocaleString()} 件`;
+  renderGrid();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  filtered.forEach(p => grid.appendChild(makeCard(p)));
+}
+
+function makeCard(p) {
+  const resolved = resolveCategory(p);
+  const isOverridden = !!p.category;
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.dataset.id = p.id;
+
+  const imgHtml = p.image_url
+    ? `<img src="${p.image_url}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='<div class=no-img>💗</div>'">`
+    : `<div class="no-img">💗</div>`;
+
+  const styleBadge = p.style
+    ? `<span class="badge badge-style-${p.style}">${p.style.toUpperCase()}</span>`
+    : '';
+
+  const options = CATEGORIES.map(c =>
+    `<option value="${c.id}" ${resolved === c.id ? 'selected' : ''}>${c.label}</option>`
+  ).join('');
+
+  card.innerHTML = `
+    <div class="card-img-wrap">${imgHtml}</div>
+    <div class="card-body">
+      <div class="card-name" title="${(p.product_name||'').replace(/"/g,'&quot;')}">${p.product_name || '—'}</div>
+      <div class="card-meta">
+        <span class="badge badge-source">${p.source || '?'}</span>
+        ${styleBadge}
+        ${isOverridden ? '<span class="badge" style="background:#1a2200;color:#aaff44">✏️ 手動</span>' : ''}
+      </div>
+      ${p.price ? `<div class="card-price">${p.price}</div>` : ''}
+      <select class="cat-select${isOverridden ? ' changed' : ''}" data-original="${resolved}">
+        ${options}
+      </select>
+      <button class="save-btn${isOverridden ? ' visible' : ''}">SAVE</button>
+      <a class="card-link" href="${p.product_url || '#'}" target="_blank" rel="noopener">商品ページ →</a>
+    </div>
+  `;
+
+  const sel = card.querySelector('.cat-select');
+  const btn = card.querySelector('.save-btn');
+
+  sel.addEventListener('change', () => {
+    const changed = sel.value !== (p.category || autoCategory(p.product_name||''));
+    card.classList.toggle('dirty', changed);
+    sel.classList.toggle('changed', changed || !!p.category);
+    btn.classList.toggle('visible', true);
+  });
+
+  btn.addEventListener('click', () => saveCategory(p, sel, btn, card));
+
+  return card;
+}
+
+async function saveCategory(p, sel, btn, card) {
+  const newCat = sel.value;
+  btn.textContent = 'SAVING…';
+  btn.classList.add('saving');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/pink_products?id=eq.${p.id}`,
+      {
+        method: 'PATCH',
+        headers: { ...HEADERS, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+        body: JSON.stringify({ category: newCat })
+      }
+    );
+    if (!res.ok) throw new Error(res.status);
+
+    p.category = newCat;
+    btn.textContent = 'SAVED ✓';
+    btn.classList.remove('saving');
+    btn.classList.add('saved');
+    card.classList.remove('dirty');
+    sel.classList.add('changed');
+
+    // Add 手動 badge
+    const meta = card.querySelector('.card-meta');
+    if (!meta.querySelector('.badge[style*="aaff44"]')) {
+      const b = document.createElement('span');
+      b.className = 'badge';
+      b.style.cssText = 'background:#1a2200;color:#aaff44';
+      b.textContent = '✏️ 手動';
+      meta.appendChild(b);
+    }
+
+    showToast(`✓ ${p.product_name?.slice(0,30) || 'ID:'+p.id} → ${newCat}`);
+
+    setTimeout(() => {
+      btn.textContent = 'SAVE';
+      btn.classList.remove('saved');
+      btn.disabled = false;
+    }, 2000);
+  } catch(e) {
+    btn.textContent = 'ERROR';
+    btn.classList.remove('saving');
+    btn.disabled = false;
+    showToast('❌ 保存失敗: ' + e.message);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─── Init ───
+(async () => {
+  try {
+    allProducts = await fetchAll();
+    document.getElementById('loader').style.display = 'none';
+    document.getElementById('grid').style.display = 'grid';
+    applyFilter();
+  } catch(e) {
+    document.getElementById('loader').textContent = 'Error: ' + e.message;
+  }
+})();
+
+// Search
+document.getElementById('search-input').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  applyFilter();
+});
+
+// Category filter buttons
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCatFilter = btn.dataset.cat;
+    applyFilter();
+  });
+});
+</script>
+</body>
+</html>
